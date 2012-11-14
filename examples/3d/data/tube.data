@@ -4,6 +4,10 @@ TITLE
 	'Example of how to do CO2 sequestration modelling using opm-core.'
 /
 
+DIMENS
+	3	1	2
+/
+
 -- brine as the wetting phase, supercritical co2 as the non-wetting phase
 OIL
 WATER
@@ -18,4 +22,10 @@ START
 -- no wells
 WELLDIMS
 	10*0
+/
+
+GRID
+
+INCLUDE
+	tube.grdecl
 /
