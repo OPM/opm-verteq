@@ -8,8 +8,10 @@
 #include <opm/core/simulator/TwophaseState.hpp>
 #include <opm/core/wells/WellsManager.hpp>
 #include <opm/core/simulator/WellState.hpp>
+#include <opm/core/pressure/FlowBCManager.hpp>
 
 #include <iostream>
+#include <vector>
 
 using namespace Opm;
 using namespace Opm::parameter;
@@ -40,6 +42,10 @@ int main (int argc, char *argv[]) {
 	// setup wells from input, using grid and rock properties read earlier
 	WellsManager wells (parser, grid, fluid.permeability());
 	WellState wellState; wellState.init (wells.c_wells(), state);
+
+	// no sources and no-flow boundary conditions
+	vector <double> src (grid.number_of_cells, 0.);
+	FlowBCManager bc;
 
 	// if some parameters were unused, it may be that they're spelled wrong
 	if (param.anyUnused ()) {
