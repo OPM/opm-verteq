@@ -10,6 +10,9 @@
 #include <opm/core/simulator/WellState.hpp>
 #include <opm/core/pressure/FlowBCManager.hpp>
 #include <opm/core/simulator/SimulatorTimer.hpp>
+#include <opm/core/linalg/LinearSolverFactory.hpp>
+#include <opm/core/simulator/SimulatorIncompTwophase.hpp>
+#include <opm/core/simulator/SimulatorReport.hpp>
 
 #include <iostream>
 #include <vector>
@@ -52,11 +55,19 @@ int main (int argc, char *argv[]) {
 	SimulatorTimer stepping;
 	stepping.init (parser);
 
+	// pressure and transport solvers
+	LinearSolverFactory linsolver (param);
+	SimulatorIncompTwophase sim (param, grid, fluid, 0, wells,
+	                             src, bc.c_bcs(), linsolver, gravity);
+
 	// if some parameters were unused, it may be that they're spelled wrong
 	if (param.anyUnused ()) {
 		cerr << "Unused parameters:" << endl;
 		param.displayUsage ();
 	}
+
+	// loop solvers until final time has arrived
+	sim.run (stepping, state, wellState);
 
 	// done
 	return 0;
