@@ -3,6 +3,7 @@
 #include <opm/core/utility/parameters/ParameterGroup.hpp>
 #include <opm/core/io/eclipse/EclipseGridParser.hpp>
 #include <opm/core/grid/GridManager.hpp>
+#include <opm/core/props/IncompPropertiesFromDeck.hpp>
 
 #include <iostream>
 
@@ -23,6 +24,9 @@ int main (int argc, char *argv[]) {
 	// extract grid from the parse tree
 	const GridManager gridMan (parser);
 	const UnstructuredGrid& grid = *gridMan.c_grid ();
+
+	// extract fluid, rock and two-phase properties from the parse tree
+	IncompPropertiesFromDeck fluid (parser, grid);
 
 	// if some parameters were unused, it may be that they're spelled wrong
 	if (param.anyUnused ()) {

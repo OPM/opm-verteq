@@ -29,3 +29,31 @@ GRID
 INCLUDE
 	tube.grdecl
 /
+
+PROPS
+
+-- brine is 990 kg/m3, 0.35cP, co2 is 650 kg/m3, 0.06cP, at 100 bars (40C)
+DENSITY
+--	brine	co2
+	990		650
+/
+
+PVTW
+--	pres	vol.f	comp	visc
+	100		1		0		0.35
+/
+
+PVCDO
+	100		1		0		0.06
+/
+
+SWOF
+--	Sw		krw		kro		Pcow
+	0.2		0.0		1.0		100
+	0.3		0.1		0.6		10
+	0.4		0.15	0.35	2
+	0.5		0.25	0.25	1
+	0.6		0.35	0.15	0.3
+	0.7		0.6		0.1		0.05
+	0.8		1		0		0
+/
