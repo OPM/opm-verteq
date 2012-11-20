@@ -92,3 +92,8 @@ WCONINJE
 WCONPROD
 	prod	OPEN	RESV	-1		-1		-1		-1		1	/
 /
+
+-- report monthly for a year
+TSTEP
+	31	28	31	30	31	30	31	31	30	31	30	31
+/

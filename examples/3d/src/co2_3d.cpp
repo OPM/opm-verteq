@@ -9,6 +9,7 @@
 #include <opm/core/wells/WellsManager.hpp>
 #include <opm/core/simulator/WellState.hpp>
 #include <opm/core/pressure/FlowBCManager.hpp>
+#include <opm/core/simulator/SimulatorTimer.hpp>
 
 #include <iostream>
 #include <vector>
@@ -46,6 +47,10 @@ int main (int argc, char *argv[]) {
 	// no sources and no-flow boundary conditions
 	vector <double> src (grid.number_of_cells, 0.);
 	FlowBCManager bc;
+
+	// run schedule
+	SimulatorTimer stepping;
+	stepping.init (parser);
 
 	// if some parameters were unused, it may be that they're spelled wrong
 	if (param.anyUnused ()) {
