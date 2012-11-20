@@ -6,6 +6,8 @@
 #include <opm/core/props/IncompPropertiesFromDeck.hpp>
 #include <opm/core/simulator/initState.hpp>
 #include <opm/core/simulator/TwophaseState.hpp>
+#include <opm/core/wells/WellsManager.hpp>
+#include <opm/core/simulator/WellState.hpp>
 
 #include <iostream>
 
@@ -34,6 +36,10 @@ int main (int argc, char *argv[]) {
 	const double gravity [] = { 0., 0., Opm::unit::gravity };
 	TwophaseState state;
 	initStateFromDeck (grid, fluid, parser, gravity [3], state);
+
+	// setup wells from input, using grid and rock properties read earlier
+	WellsManager wells (parser, grid, fluid.permeability());
+	WellState wellState; wellState.init (wells.c_wells(), state);
 
 	// if some parameters were unused, it may be that they're spelled wrong
 	if (param.anyUnused ()) {

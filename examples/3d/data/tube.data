@@ -19,9 +19,9 @@ START
 	01 DEC 2012
 /
 
--- no wells
+-- two wells, one injector and one producer
 WELLDIMS
-	10*0
+	2	1	1	2
 /
 
 GRID
@@ -67,4 +67,28 @@ SWAT
 
 PRESSURE
 	6*100.0
+/
+
+SCHEDULE
+
+-- injector is at (1,1,1..2), producer is at (3,1,1..2), at 1000m depth
+-- both wells have a radius of 0.2m
+WELSPECS
+	inj		FIELD	1	1	1000	0	/
+	prod	FIELD	3	1	1000	0	/
+/
+
+COMPDAT
+	inj		0	0	1	2	OPEN	1	0	0.2		/
+	prod	0	0	1	2	OPEN	1	0	0.2		/
+/
+
+-- inject water with a constant rate of 1 cubic meters per day
+WCONINJE
+	inj		WATER	OPEN	RESV	-1		1	/
+/
+
+-- pump out 1 cubic meter per day from the reservoir
+WCONPROD
+	prod	OPEN	RESV	-1		-1		-1		-1		1	/
 /
