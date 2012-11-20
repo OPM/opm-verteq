@@ -57,3 +57,14 @@ SWOF
 	0.7		0.6		0.1		0.05
 	0.8		1		0		0
 /
+
+SOLUTION
+
+-- every block in the grid starts out water-filled, at 100 bars
+SWAT
+	6*1.0
+/
+
+PRESSURE
+	6*100.0
+/

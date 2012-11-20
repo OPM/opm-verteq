@@ -4,6 +4,8 @@
 #include <opm/core/io/eclipse/EclipseGridParser.hpp>
 #include <opm/core/grid/GridManager.hpp>
 #include <opm/core/props/IncompPropertiesFromDeck.hpp>
+#include <opm/core/simulator/initState.hpp>
+#include <opm/core/simulator/TwophaseState.hpp>
 
 #include <iostream>
 
@@ -27,6 +29,11 @@ int main (int argc, char *argv[]) {
 
 	// extract fluid, rock and two-phase properties from the parse tree
 	IncompPropertiesFromDeck fluid (parser, grid);
+
+	// initial state of the reservoir
+	const double gravity [] = { 0., 0., Opm::unit::gravity };
+	TwophaseState state;
+	initStateFromDeck (grid, fluid, parser, gravity [3], state);
 
 	// if some parameters were unused, it may be that they're spelled wrong
 	if (param.anyUnused ()) {
