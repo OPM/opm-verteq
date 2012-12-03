@@ -1,0 +1,21 @@
+RUNSPEC
+
+TITLE
+	'Example of how to do CO2 sequestration modelling using opm-core.'
+/
+
+-- brine as the wetting phase, supercritical co2 as the non-wetting phase
+OIL
+WATER
+
+-- only use SI units
+METRIC
+
+START
+	01 DEC 2012
+/
+
+-- no wells
+WELLDIMS
+	10*0
+/
