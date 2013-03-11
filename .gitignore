@@ -1,0 +1,45 @@
+# editor backup files
+*~
+.\#*
+\#*\#
+.\#*\#
+
+# compiler output
+*.o
+*.mod
+
+# libtool compatible files
+*.lo
+*.la
+
+# Eclipse project settings
+.cproject
+.project
+.settings/*
+
+# QtCreator project settings
+CMakeLists.txt.user*
+
+# in-tree build with CMake
+CMakeCache.txt
+CMakeFiles/
+config.h
+*install.cmake
+*-config*.cmake
+Makefile
+dune.module
+*.pc
+install_manifest.txt
+
+# binaries
+bin/
+lib/
+
+# testing framework
+CTestTestfile.cmake
+DartConfiguration.tcl
+Testing/
+
+# doxygen artifacts
+doc/doxygen/Doxyfile.in
+doc/doxygen/Doxyfile

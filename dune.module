@@ -1,0 +1,4 @@
+Module: opm-verteq
+Version: 1.0
+Maintainer: roland.kaufmann@uni.no
+Depends: opm-core (>= 1.0)

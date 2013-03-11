@@ -1,0 +1,15 @@
+How to set this project up in QtCreator (2.6)
+---------------------------------------------
+1. File | Open File or Project...
+2. Browse to "CMakeLists.txt" in opm-verteq.
+   Open.
+3. Build directory: /home/rka081/opm/bld/opm-verteq
+   Next.
+4. Arguments: -DCMAKE_BUILD_TYPE=Debug -Dopm-core_DIR=«path-to-opm-core» -DPRECOMPILE_HEADERS=ON -DBUILD_SHARED_LIBS=ON
+   Run CMake
+   Finish
+5. Projects (on the sidebar)
+6. Build Steps
+   Details
+   Targets: [X] opmverteq
+7. Build | Build All
