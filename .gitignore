@@ -23,21 +23,23 @@ CMakeLists.txt.user*
 # in-tree build with CMake
 CMakeCache.txt
 CMakeFiles/
-cmake_install.cmake
 config.h
-opm-core-config.cmake
-opm-core-config-version.cmake
-opm-core-install.cmake
+*install.cmake
+*-config*.cmake
 Makefile
-bin/
-lib/
-Doxyfile
-Documentation/html
 dune.module
 *.pc
 install_manifest.txt
+
+# binaries
+bin/
+lib/
 
 # testing framework
 CTestTestfile.cmake
 DartConfiguration.tcl
 Testing/
+
+# doxygen artifacts
+doc/doxygen/Doxyfile.in
+doc/doxygen/Doxyfile
