@@ -1,0 +1,4 @@
+#ifndef OPM_VERTEQ_INCLUDED
+#define OPM_VERTEQ_INCLUDED
+
+#endif /* OPM_VERTEQ_INCLUDED */

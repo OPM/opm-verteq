@@ -26,6 +26,7 @@
 # originally generated with the command:
 # find opm -name '*.c*' -printf '\t%p\n' | sort
 list (APPEND MAIN_SOURCE_FILES
+	opm/verteq/verteq.cpp
 	)
 
 # originally generated with the command:
@@ -46,4 +47,5 @@ list (APPEND EXAMPLE_SOURCE_FILES
 # originally generated with the command:
 # find opm -name '*.h*' -a ! -name '*-pch.hpp' -printf '\t%p\n' | sort
 list (APPEND PUBLIC_HEADER_FILES
+	opm/verteq/verteq.hpp
 	)
