@@ -73,11 +73,9 @@ include (UseOptimization)
 # dependencies, in case they alter the list of warnings
 include (UseWarnings)
 
-### --- begin opm-core specific --- ###
-# parallel programming
-include (UseOpenMP)
-find_openmp (${project})
-### --- end opm-core specific --- ###
+### --- begin opm-verteq specific --- ###
+include (UseVisibility)
+### --- end opm-verteq specific --- ###
 
 # macro to set standard variables (INCLUDE_DIRS, LIBRARIES etc.)
 include (OpmFind)
