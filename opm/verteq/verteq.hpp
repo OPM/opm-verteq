@@ -1,5 +1,5 @@
-#ifndef OPM_VERTEQ_INCLUDED
-#define OPM_VERTEQ_INCLUDED
+#ifndef OPM_VERTEQ_VERTEQ_HPP_INCLUDED
+#define OPM_VERTEQ_VERTEQ_HPP_INCLUDED
 
 #include <opm/core/utility/visibility.h>
 
@@ -11,4 +11,4 @@
 #define OPM_VERTEQ_PRIVATE  SYMBOL_IS_LOCALDEF
 
 
-#endif /* OPM_VERTEQ_INCLUDED */
+#endif /* OPM_VERTEQ_VERTEQ_HPP_INCLUDED */
