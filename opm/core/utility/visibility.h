@@ -30,8 +30,12 @@
 #else
 #  if __GNUC__ >= 4
 #    define SYMBOL_IS_EXPORTED __attribute__ ((visibility ("default")))
-#    define SYMBOL_IS_IMPORTED __attribute__ ((visibility ("hidden")))
+#    define SYMBOL_IS_IMPORTED __attribute__ ((visibility ("default")))
 #    define SYMBOL_IS_LOCALDEF __attribute__ ((visibility ("hidden")))
+#  else
+#    define SYMBOL_IS_EXPORTED
+#    define SYMBOL_IS_IMPORTED
+#    define SYMBOL_IS_LOCALDEF
 #  endif
 #endif
 
