@@ -31,9 +31,11 @@ include (UseFastBuilds)
 # where the heuristics don't find it. if you use this as a template,
 # then you should remove this line.
 set (opm-core_ROOT "${PROJECT_BINARY_DIR}/../../../opm-core")
+set (opm-verteq_ROOT "${PROJECT_BINARY_DIR}/../..")
 
 include (OpmFind)
 find_and_append_package (opm-core REQUIRED)
+find_and_append_package (opm-verteq REQUIRED)
 include_directories (${co2_2d_INCLUDE_DIRS})
 link_directories (${co2_2d_LIBRARY_DIRS})
 add_definitions (${co2_2d_DEFINITIONS})
