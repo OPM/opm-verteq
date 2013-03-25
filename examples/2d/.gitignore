@@ -1,0 +1,15 @@
+# compiler output
+bin/
+
+# editor backup files
+*~
+
+# CMake artifacts
+CMakeCache.txt
+CMakeFiles/
+Makefile
+cmake_install.cmake
+config.h
+
+# QtCreator generated project files
+CMakeLists.txt.user
