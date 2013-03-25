@@ -1,7 +1,7 @@
 # -*- mode: cmake; tab-width: 2; indent-tabs-mode: t; truncate-lines: t; compile-command: "cmake -Wdev" -*-
 # vim: set filetype=cmake autoindent tabstop=2 shiftwidth=2 noexpandtab softtabstop=2 nowrap
 cmake_minimum_required (VERSION 2.8)
-project (co2_3d)
+project (co2_2d)
 enable_language (CXX)
 
 # build debug by default
@@ -34,29 +34,29 @@ set (opm-core_ROOT "${PROJECT_BINARY_DIR}/../../../opm-core")
 
 include (OpmFind)
 find_and_append_package (opm-core REQUIRED)
-include_directories (${co2_3d_INCLUDE_DIRS})
-link_directories (${co2_3d_LIBRARY_DIRS})
-add_definitions (${co2_3d_DEFINITIONS})
+include_directories (${co2_2d_INCLUDE_DIRS})
+link_directories (${co2_2d_LIBRARY_DIRS})
+add_definitions (${co2_2d_DEFINITIONS})
 
 # configuration defines necessary for the header files
 include (ConfigVars)
 configure_vars (
 	FILE  CXX  "${PROJECT_BINARY_DIR}/config.h"
-	WRITE ${co2_3d_CONFIG_VARS}
+	WRITE ${co2_2d_CONFIG_VARS}
 	)
 
 # create executables in this directory
 set (CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/bin")
 
 # locate source files that makes out program(s)
-set (co2_3d_SOURCES "src/co2_3d.cpp")
+set (co2_2d_SOURCES "src/co2_2d.cpp")
 
 # setup compilation of this particular executable
-add_executable (co2_3d ${co2_3d_SOURCES})
-target_link_libraries (co2_3d ${co2_3d_LIBRARIES})
+add_executable (co2_2d ${co2_2d_SOURCES})
+target_link_libraries (co2_2d ${co2_2d_LIBRARIES})
 
 # queue this executable to be stripped
-strip_debug_symbols (co2_3d)
+strip_debug_symbols (co2_2d)
 
 # example input file (realize directory names)
 configure_file (
