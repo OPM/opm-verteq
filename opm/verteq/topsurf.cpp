@@ -31,3 +31,51 @@ TopSurf::column (int ndx_2d) {
 	// return an iterator over this
 	return iterator_range <int*> (begin_addr, end_addr);
 }
+
+TopSurf::TopSurf ()
+	: col_cells (0)
+	, col_cellpos (0) {
+	// zero initialize all members that come from UnstructuredGrid
+	// since that struct is a C struct, it doesn't have a ctor
+	dimensions = 0;
+	number_of_cells = 0;
+	number_of_faces = 0;
+	number_of_nodes = 0;
+	face_nodes = 0;
+	face_nodepos = 0;
+	face_cells = 0;
+	cell_faces = 0;
+	cell_facepos = 0;
+	node_coordinates = 0;
+	face_centroids = 0;
+	face_areas = 0;
+	face_normals = 0;
+	cell_centroids = 0;
+	cell_volumes = 0;
+	global_cell = 0;
+	cartdims[0] = 0;
+	cartdims[1] = 0;
+	cartdims[2] = 0;
+	cell_facetag = 0;
+}
+
+TopSurf::~TopSurf () {
+	// deallocate memory that may have been created. if the dtor is
+	// called from throwing an exception, the members should be zero
+	// initialized, so it's OK to send them to delete.
+	delete [] face_nodes;
+	delete [] face_nodepos;
+	delete [] face_cells;
+	delete [] cell_faces;
+	delete [] cell_facepos;
+	delete [] node_coordinates;
+	delete [] face_centroids;
+	delete [] face_areas;
+	delete [] face_normals;
+	delete [] cell_volumes;
+	delete [] global_cell;
+	delete [] cell_facetag;
+	// these are the extra members that are TopSurf specific
+	delete [] col_cells;
+	delete [] col_cellpos;
+}

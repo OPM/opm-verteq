@@ -23,8 +23,14 @@ namespace Opm {
  *
  * The full grid is also referred to as the fine grid, and this grid as the
  * coarse grid, or upscaled, grid.
+ *
+ * Note: Do NOT call destroy_grid () when done with this structure; it will
+ * only clean up half of it. Wrap it is a smart pointer that calls the
+ * destructor.
  */
 struct TopSurf : public UnstructuredGrid {
+	virtual ~TopSurf ();
+
 	/**
 	 * Indices of the columns' underlaying cells in the full grid.
 	 *
@@ -107,6 +113,12 @@ struct TopSurf : public UnstructuredGrid {
 	 * @endcode
 	 */
 	boost::iterator_range <int*> column (int ndx_2d);
+
+private:
+	/**
+	 * @brief You are not meant to construct these yourself; use create ().
+	 */
+	TopSurf ();
 };
 
 } // namespace Opm
