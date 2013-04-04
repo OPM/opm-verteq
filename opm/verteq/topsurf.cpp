@@ -11,6 +11,42 @@ using namespace Opm;
 using namespace std;
 
 /**
+ * @brief Extent for two-dimesional grid
+ */
+struct Ext2D {
+	int ni;
+	int nj;
+
+	// initialize POD from its constituents
+	Ext2D (int num_of_i, int num_of_j)
+		: ni (num_of_i)
+		, nj (num_of_j) {
+	}
+};
+
+/**
+ * @brief Grid extent for three-dimensional grid
+ */
+struct Ext3D {
+	// number of possible elements in each logical direction
+	int ni;
+	int nj;
+	int nk;
+
+	// initialize POD from an existing grid
+	Ext3D (const UnstructuredGrid& g)
+		: ni (g.cartdims [0])
+		, nj (g.cartdims [1])
+		, nk (g.cartdims [2]) {
+	}
+
+	// project onto two-dimensional surface grid
+	Ext2D project () const {
+		return Ext2D (ni, nj);
+	}
+};
+
+/**
  * @brief Process to extract the top surface from a structured grid.
  *
  * This object encapsulates a procedure with variables shared amongst
@@ -24,18 +60,32 @@ struct TopSurfBuilder {
 	// target grid we are constructing
 	TopSurf& ts;
 
+	// number of grid dimensions in each direction of the plane
+	Ext3D three_d;
+
+	// dimensions needed to create a two-dimensional projection
+	// of the top surface
+	Ext2D two_d;
+
 	TopSurfBuilder (const UnstructuredGrid& from, TopSurf& into)
 		// link to the fine grid for the duration of the construction
 		: fine_grid (from)
 
 		// allocate memory for the grid. it is initially empty
-		, ts (into) {
+		, ts (into)
+
+		// extract dimensions from the source grid
+		, three_d (fine_grid)
+		, two_d (three_d.project ()) {
 
 		// check that the fine grid contains structured information;
 		// this is essential to mapping cells to columns
 		if (!fine_grid.global_cell) {
 			throw OPM_EXC ("Find grid is not (logically) structured");
 		}
+
+		// create frame of the new top surface
+		dimensions ();
 	}
 
 	// various stages of the build process, supposed to be called in
@@ -43,6 +93,13 @@ struct TopSurfBuilder {
 	// make it more obvious what parts that needs to be shared between
 	// them)
 private:
+	void dimensions () {
+		// we are going to create two-dimensional grid
+		ts.dimensions = 2;
+		ts.cartdims[0] = two_d.ni;
+		ts.cartdims[1] = two_d.nj;
+		ts.cartdims[2] = 1;
+	}
 };
 
 TopSurf*
