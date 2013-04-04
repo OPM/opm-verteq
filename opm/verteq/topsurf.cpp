@@ -2,6 +2,7 @@
 // This file is licensed under the GNU General Public License v3.0
 
 #include <opm/verteq/topsurf.hpp>
+#include <opm/core/utility/exc.hpp>
 #include <boost/range/iterator_range.hpp>
 #include <memory> // auto_ptr
 
@@ -9,15 +10,57 @@ using namespace boost;
 using namespace Opm;
 using namespace std;
 
+/**
+ * @brief Process to extract the top surface from a structured grid.
+ *
+ * This object encapsulates a procedure with variables shared amongst
+ * several sub-procedures (like in Pascal). These objects are not
+ * supposed to linger on afterwards.
+ */
+struct TopSurfBuilder {
+	// source grid from which we get the input data
+	const UnstructuredGrid& fine_grid;
+
+	// target grid we are constructing
+	TopSurf& ts;
+
+	TopSurfBuilder (const UnstructuredGrid& from, TopSurf& into)
+		// link to the fine grid for the duration of the construction
+		: fine_grid (from)
+
+		// allocate memory for the grid. it is initially empty
+		, ts (into) {
+
+		// check that the fine grid contains structured information;
+		// this is essential to mapping cells to columns
+		if (!fine_grid.global_cell) {
+			throw OPM_EXC ("Find grid is not (logically) structured");
+		}
+	}
+
+	// various stages of the build process, supposed to be called in
+	// this order. (I have separated them into separate procedures to
+	// make it more obvious what parts that needs to be shared between
+	// them)
+private:
+};
+
 TopSurf*
-TopSurf::create (const UnstructuredGrid& fine) {
-	// allocate memory for the grid. it is initially empty
-	auto_ptr <TopSurf> ts = auto_ptr <TopSurf> (new TopSurf);
+TopSurf::create (const UnstructuredGrid& fine_grid) {
+	// I *know* that we are not supposed to use auto_ptr anymore, but
+	// it works in both C++98 and C++11 and is the only common way to
+	// transfer the object out of the smart pointer afterwards
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+	auto_ptr <TopSurf> ts (new TopSurf);
+#pragma GCC diagnostic pop
+
+	// outsource the entire construction to a builder object
+	TopSurfBuilder (fine_grid, *(ts.get ()));
 
 	// client owns pointer to constructed grid from this point
 	return ts.release ();
 }
-
 
 iterator_range <int*>
 TopSurf::column (int ndx_2d) {
