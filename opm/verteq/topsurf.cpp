@@ -4,11 +4,54 @@
 #include <opm/verteq/topsurf.hpp>
 #include <opm/core/utility/exc.hpp>
 #include <boost/range/iterator_range.hpp>
+#include <algorithm> // min, max
+#include <climits> // INT_MIN, INT_MAX
+#include <cstdlib> // div
 #include <memory> // auto_ptr
 
 using namespace boost;
 using namespace Opm;
 using namespace std;
+
+/**
+ * There are three types (nonetheless!) of indices used in this module:
+ *
+ * (1) Cartesian coordinate
+ * (2) Cartesian index
+ * (3) Global index
+ *
+ * The Cartesian coordinate is an (i,j)-tuple into the cornerpoint grid
+ * structure. The Cartesian index, is a flat integer which has is
+ * determined solely by the structure of the grid, regardless of whether
+ * there are any active elements. The global index is the index which is
+ * assigned to it in the grid structure, after inactive elements are
+ * discarded.
+ */
+
+/**
+ * @brief Index tuple in two-dimensional cornerpoint grid
+ */
+struct Coord2D {
+	int i;
+	int j;
+
+	Coord2D (int a_i, int a_j)
+		: i (a_i)
+		, j (a_j) {
+	}
+};
+
+/**
+ * @brief Index tuple in three-dimensional cornerpoint grid
+ */
+struct Coord3D : public Coord2D {
+	int k;
+
+	Coord3D (int a_i, int a_j, int a_k)
+		: Coord2D (a_i, a_j)
+		, k (a_k) {
+	}
+};
 
 /**
  * @brief Extent for two-dimesional grid
@@ -21,6 +64,24 @@ struct Ext2D {
 	Ext2D (int num_of_i, int num_of_j)
 		: ni (num_of_i)
 		, nj (num_of_j) {
+	}
+	int num_elems () {
+		return ni * nj;
+	}
+
+	/**
+	 * @brief Convert Cartesian coordinate to Cartesian index
+	 * @return
+	 */
+	int cart_ndx (const Coord2D& coord) const {
+		return coord.j * ni + coord.i;
+	}
+
+	Coord2D coord (const int cart_ndx) const {
+		const div_t strip = div (cart_ndx, ni);
+		const int i = strip.rem;
+		const int j = strip.quot;
+		return Coord2D (i, j);
 	}
 };
 
@@ -43,6 +104,21 @@ struct Ext3D {
 	// project onto two-dimensional surface grid
 	Ext2D project () const {
 		return Ext2D (ni, nj);
+	}
+
+	/**
+	 * @brief Deconstruct the Cartesian index into coordinate
+	 * @param ndx Index into Cartesian grid
+	 * @return
+	 */
+	Coord3D coord (const int cart_ndx) const {
+		// the i-index moves fastest, as this is Fortran-indexing
+		const div_t strip = div (cart_ndx, ni);
+		const int i = strip.rem;
+		const div_t plane = div (strip.quot, nj);
+		const int j = plane.rem;
+		const int k = plane.quot;
+		return Coord3D (i, j, k);
 	}
 };
 
@@ -67,6 +143,11 @@ struct TopSurfBuilder {
 	// of the top surface
 	Ext2D two_d;
 
+	// map from a two-dimensional Cartesian coordinate to the final
+	// id of an active element in the grid, or -1 if nothing is assigned
+	// this vector is first valid after elements() have been done
+	vector <int> elms;
+
 	TopSurfBuilder (const UnstructuredGrid& from, TopSurf& into)
 		// link to the fine grid for the duration of the construction
 		: fine_grid (from)
@@ -86,6 +167,9 @@ struct TopSurfBuilder {
 
 		// create frame of the new top surface
 		dimensions ();
+
+		// identify active columns in the grid
+		elements ();
 	}
 
 	// various stages of the build process, supposed to be called in
@@ -99,6 +183,129 @@ private:
 		ts.cartdims[0] = two_d.ni;
 		ts.cartdims[1] = two_d.nj;
 		ts.cartdims[2] = 1;
+	}
+
+	void elements() {
+		// statistics of the deepest and highest active k-index of
+		// each column in the grid. to know each index into the column,
+		// we only need to know the deepest k and the count; the highest
+		// is sampled to do consistency checks afterwards
+		const int num_cols = two_d.num_elems ();
+
+		// assume initially that there are no active elements in each column
+		vector <int> act_cnt (num_cols, 0);
+		ts.number_of_cells = 0;
+
+		// initialize these to values that are surely out of range, so that
+		// the first invocation of min or max always set the value. we use
+		// this to detect whether anything was written later on. since the
+		// numbering of the grid starts at the bottom, then the deepest cell
+		// has the *lowest* k-index, thus we need a value greater than all
+		vector <int> deep_k (num_cols, INT_MAX);
+		vector <int> high_k (num_cols, INT_MIN);
+
+		// loop once through the fine grid to gather statistics of the
+		// size of the surface so we know what to allocate
+		for (int fine_elem = 0; fine_elem != fine_grid.number_of_cells; ++fine_elem) {
+			// get the cartesian index for this cell; this is the cell
+			// number in a grid that also includes the inactive cells
+			const int cart_ndx = fine_grid.global_cell [fine_elem];
+
+			// deconstruct the cartesian index into (i,j,k) constituents;
+			// the i-index moves fastest, as this is Fortran-indexing
+			const Coord3D ijk = three_d.coord (cart_ndx);
+
+			// figure out which column this item belongs to (in 2D)
+			const int col = two_d.cart_ndx (ijk);
+
+			// update the statistics for this column; 'deepest' is the lowest
+			// k-index seen so far, 'highest' is the highest (ehm)
+			deep_k[col] = min (deep_k[col], ijk.k);
+			high_k[col] = max (high_k[col], ijk.k);
+
+			// we have seen an element in this column; it becomes active. only
+			// columns with active cells will get active elements in the surface
+			// grid. if this cell wasn't marked as active before we can check it
+			// off now
+			if (!act_cnt[col]++) {
+				ts.number_of_cells++;
+			}
+		}
+
+		// check that we have a continuous range of elements in each column;
+		// this must be the case to assume that the entire column can be merged
+		for (int col = 0; col < num_cols; ++col) {
+			if (act_cnt[col]) {
+				if (deep_k[col] + act_cnt[col] - 1 != high_k[col]) {
+					const Coord2D coord = two_d.coord (col);
+					throw OPM_EXC ("Non-continuous column at (%d, %d)", coord.i, coord.j);
+				}
+			}
+		}
+
+		// allocate memory needed to hold the elements in the grid structure
+		// if we throw an exception at some point, the destructor of the TopSurf
+		// will take care of deallocating this memory for us
+		ts.global_cell = new int [ts.number_of_cells];
+		ts.col_cellpos = new int [ts.number_of_cells+1];
+
+		// there is no elements before the first column, so this number is
+		// always zero. it is written to the array to maintain a straight code
+		// path in calculations.
+		ts.col_cellpos[0] = 0;
+
+		// now we know enough to start assigning ids to active columns.if
+		// memory is a real shortage, we could reuse the act_cnt array for this.
+		elms.resize (num_cols, -1);
+
+		// loop through the grid and assign an id for all columns that have
+		// active elements
+		int elem_id = 0;
+		for (int col = 0; col < num_cols; ++col) {
+			if (act_cnt[col]) {
+				elms[col] = elem_id;
+
+				// dual pointer that maps the other way; what is the structured
+				// index of this element (flattened into an integer)
+				ts.global_cell[elem_id] = col;
+
+				// note the number of elements there now are before the next column;
+				// in addition to all the previous ones, our elements are now added
+				ts.col_cellpos[elem_id+1] = ts.col_cellpos[elem_id] + act_cnt[col];
+				elem_id++;
+			}
+		}
+
+		// now write indices from the fine grid into the column map of the surface
+		// we end up with a list of element that are in each column
+		ts.col_cells = new int [fine_grid.number_of_cells];
+		for (int cell = 0; cell < fine_grid.number_of_cells; ++cell) {
+			// get the Cartesian index for this element
+			const int cart_ndx = fine_grid.global_cell[cell];
+			const Coord3D ijk = three_d.coord (cart_ndx);
+
+			// get the id of the column in which this element now belongs
+			const int col = two_d.cart_ndx (ijk);
+			const int elem_id = elms[col];
+
+			// start of the list of elements for this particular column
+			const int segment = ts.col_cellpos[elem_id];
+
+			// since there is supposed to be a continuous range of elements in
+			// each column, we can calculate the relative position in the list
+			// based on the k part of the coordinate.
+			const int offset = ijk.k - deep_k[col];
+
+			// write the fine grid cell number in the column list; since we
+			// have calculated the position based on depth, the list will be
+			// sorted downwards up when we are done
+			ts.col_cells[segment + offset] = cell;
+		}
+
+		// these members will be filled by computeGeometry, but needs valid
+		// memory to work with
+		ts.cell_volumes = new double [ts.number_of_cells];
+		ts.cell_centroids = new double [ts.dimensions * ts.number_of_cells];
 	}
 };
 
