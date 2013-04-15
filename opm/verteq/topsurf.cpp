@@ -1,6 +1,7 @@
 // Copyright (C) 2013 Uni Research AS
 // This file is licensed under the GNU General Public License v3.0
 
+#include <opm/verteq/nav.hpp>
 #include <opm/verteq/topsurf.hpp>
 #include <opm/core/utility/exc.hpp>
 #include <boost/range/iterator_range.hpp>
@@ -12,121 +13,6 @@
 using namespace boost;
 using namespace Opm;
 using namespace std;
-
-/**
- * There are three types (nonetheless!) of indices used in this module:
- *
- * (1) Cartesian coordinate
- * (2) Cartesian index
- * (3) Global index
- *
- * The Cartesian coordinate is an (i,j)-tuple into the cornerpoint grid
- * structure. The Cartesian index, is a flat integer which has is
- * determined solely by the structure of the grid, regardless of whether
- * there are any active elements. The global index is the index which is
- * assigned to it in the grid structure, after inactive elements are
- * discarded.
- */
-
-/**
- * @brief Index tuple in two-dimensional cornerpoint grid
- */
-struct Coord2D {
-	int i;
-	int j;
-
-	Coord2D (int a_i, int a_j)
-		: i (a_i)
-		, j (a_j) {
-	}
-};
-
-/**
- * @brief Index tuple in three-dimensional cornerpoint grid
- */
-struct Coord3D : public Coord2D {
-	int k;
-
-	Coord3D (int a_i, int a_j, int a_k)
-		: Coord2D (a_i, a_j)
-		, k (a_k) {
-	}
-};
-
-/**
- * @brief Extent for two-dimesional grid
- */
-struct Ext2D {
-	int ni;
-	int nj;
-
-	// initialize POD from its constituents
-	Ext2D (int num_of_i, int num_of_j)
-		: ni (num_of_i)
-		, nj (num_of_j) {
-	}
-	int num_elems () {
-		return ni * nj;
-	}
-
-	int num_points () {
-		// there are one more row and column of points than elements
-		// since the elements have points on both sides.
-		return (ni + 1) * (nj + 1);
-	}
-
-	/**
-	 * @brief Convert Cartesian coordinate to Cartesian index
-	 * @return
-	 */
-	int cart_ndx (const Coord2D& coord) const {
-		return coord.j * ni + coord.i;
-	}
-
-	Coord2D coord (const int cart_ndx) const {
-		const div_t strip = div (cart_ndx, ni);
-		const int i = strip.rem;
-		const int j = strip.quot;
-		return Coord2D (i, j);
-	}
-};
-
-/**
- * @brief Grid extent for three-dimensional grid
- */
-struct Ext3D {
-	// number of possible elements in each logical direction
-	int ni;
-	int nj;
-	int nk;
-
-	// initialize POD from an existing grid
-	Ext3D (const UnstructuredGrid& g)
-		: ni (g.cartdims [0])
-		, nj (g.cartdims [1])
-		, nk (g.cartdims [2]) {
-	}
-
-	// project onto two-dimensional surface grid
-	Ext2D project () const {
-		return Ext2D (ni, nj);
-	}
-
-	/**
-	 * @brief Deconstruct the Cartesian index into coordinate
-	 * @param ndx Index into Cartesian grid
-	 * @return
-	 */
-	Coord3D coord (const int cart_ndx) const {
-		// the i-index moves fastest, as this is Fortran-indexing
-		const div_t strip = div (cart_ndx, ni);
-		const int i = strip.rem;
-		const div_t plane = div (strip.quot, nj);
-		const int j = plane.rem;
-		const int k = plane.quot;
-		return Coord3D (i, j, k);
-	}
-};
 
 /**
  * @brief Process to extract the top surface from a structured grid.
@@ -143,11 +29,11 @@ struct TopSurfBuilder {
 	TopSurf& ts;
 
 	// number of grid dimensions in each direction of the plane
-	Ext3D three_d;
+	Cart3D three_d;
 
 	// dimensions needed to create a two-dimensional projection
 	// of the top surface
-	Ext2D two_d;
+	Cart2D two_d;
 
 	// map from a two-dimensional Cartesian coordinate to the final
 	// id of an active element in the grid, or -1 if nothing is assigned
