@@ -1,6 +1,9 @@
 #ifndef OPM_VERTEQ_VERTEQ_HPP_INCLUDED
 #define OPM_VERTEQ_VERTEQ_HPP_INCLUDED
 
+// Copyright (C) 2013 Uni Research AS
+// This file is licensed under the GNU General Public License v3.0
+
 #include <opm/core/utility/visibility.h>
 
 #if defined(opmverteq_EXPORTS)

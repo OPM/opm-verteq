@@ -1,3 +1,5 @@
+// Copyright (C) 2013 Uni Research AS
+// This file is licensed under the GNU General Public License v3.0
 #include <opm/verteq/topsurf.hpp>
 #include <opm/verteq/verteq.hpp>
 #include <opm/core/utility/parameters/ParameterGroup.hpp>
