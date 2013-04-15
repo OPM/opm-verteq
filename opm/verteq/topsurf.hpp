@@ -106,9 +106,8 @@ struct TopSurf : public UnstructuredGrid {
 	 *
 	 * @example
 	 * @code{.cpp}
-	 * auto col = topSurf->column (ndx_2d);
-	 * for (int* ndx_3d = col.begin(); ndx_3d != col.end(); ++ndx_3d) {
-	 *   sum += poro [*ndx_3d];
+	 * BOOST_FOREACH (int ndx_3d, topSurf->column (ndx_2d)) {
+	 *   sum += poro [ndx_3d];
 	 * }
 	 * @endcode
 	 */
