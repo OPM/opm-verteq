@@ -69,6 +69,12 @@ struct Ext2D {
 		return ni * nj;
 	}
 
+	int num_points () {
+		// there are one more row and column of points than elements
+		// since the elements have points on both sides.
+		return (ni + 1) * (nj + 1);
+	}
+
 	/**
 	 * @brief Convert Cartesian coordinate to Cartesian index
 	 * @return
