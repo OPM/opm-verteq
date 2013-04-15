@@ -15,6 +15,38 @@ using namespace Opm;
 using namespace std;
 
 /**
+ * Generic run-length iterator.
+ *
+ * @param ndx Index of the range to find, e.g. a column.
+ *
+ * @param pos Array containing accumulated counts for each range,
+ * e.g. col_collpos.
+ *
+ * @param values Array containing the values for every range,
+ * concatenated into one huge array, e.g. col_cells.
+ *
+ * @return Iterator that can be used to iterate through all values
+ * only in the specified range, e.g. cells in a column.
+ */
+template <typename T> iterator_range <const T*>
+rl_iter (const int ndx, const int* const& pos, const T* const& values) {
+	// skip all the values that belongs to ranges before us,
+	// then we get to the start of our own range
+	const T* begin_addr = &values [pos [ndx]];
+
+	// stop when we arrive at the start of the next range
+	const T* end_addr = &values [pos [ndx + 1]];
+
+	// return an iterator over this
+	return iterator_range <const T *> (begin_addr, end_addr);
+}
+
+iterator_range <const int*>
+TopSurf::column (int ndx_2d) {
+	return rl_iter <const int> (ndx_2d, this->col_cellpos, this->col_cells);
+}
+
+/**
  * @brief Process to extract the top surface from a structured grid.
  *
  * This object encapsulates a procedure with variables shared amongst
@@ -216,19 +248,6 @@ TopSurf::create (const UnstructuredGrid& fine_grid) {
 
 	// client owns pointer to constructed grid from this point
 	return ts.release ();
-}
-
-iterator_range <int*>
-TopSurf::column (int ndx_2d) {
-	// skip all the cells that belongs to columns before us,
-	// then we get to the start of our own column
-	int* begin_addr = &this->col_cells [col_cellpos [ndx_2d]];
-
-	// stop when we arrive at the start of the next column
-	int* end_addr = &this->col_cells [col_cellpos [ndx_2d + 1]];
-
-	// return an iterator over this
-	return iterator_range <int*> (begin_addr, end_addr);
 }
 
 TopSurf::TopSurf ()
