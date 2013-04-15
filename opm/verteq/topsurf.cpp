@@ -101,14 +101,14 @@ private:
 		for (int fine_elem = 0; fine_elem != fine_grid.number_of_cells; ++fine_elem) {
 			// get the cartesian index for this cell; this is the cell
 			// number in a grid that also includes the inactive cells
-			const int cart_ndx = fine_grid.global_cell [fine_elem];
+			const Cart3D::elem_t cart_ndx = fine_grid.global_cell [fine_elem];
 
 			// deconstruct the cartesian index into (i,j,k) constituents;
 			// the i-index moves fastest, as this is Fortran-indexing
 			const Coord3D ijk = three_d.coord (cart_ndx);
 
 			// figure out which column this item belongs to (in 2D)
-			const int col = two_d.cart_ndx (ijk);
+			const Cart2D::elem_t col = two_d.cart_ndx (ijk);
 
 			// update the statistics for this column; 'deepest' is the lowest
 			// k-index seen so far, 'highest' is the highest (ehm)
@@ -173,11 +173,11 @@ private:
 		ts.col_cells = new int [fine_grid.number_of_cells];
 		for (int cell = 0; cell < fine_grid.number_of_cells; ++cell) {
 			// get the Cartesian index for this element
-			const int cart_ndx = fine_grid.global_cell[cell];
+			const Cart3D::elem_t cart_ndx = fine_grid.global_cell[cell];
 			const Coord3D ijk = three_d.coord (cart_ndx);
 
 			// get the id of the column in which this element now belongs
-			const int col = two_d.cart_ndx (ijk);
+			const Cart2D::elem_t col = two_d.cart_ndx (ijk);
 			const int elem_id = elms[col];
 
 			// start of the list of elements for this particular column
