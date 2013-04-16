@@ -154,8 +154,8 @@ private:
 
 			// update the statistics for this column; 'deepest' is the lowest
 			// k-index seen so far, 'highest' is the highest (ehm)
-			deep_k[col] = min (deep_k[col], ijk.k);
-			high_k[col] = max (high_k[col], ijk.k);
+			deep_k[col] = min (deep_k[col], ijk.k());
+			high_k[col] = max (high_k[col], ijk.k());
 
 			// we have seen an element in this column; it becomes active. only
 			// columns with active cells will get active elements in the surface
@@ -172,7 +172,7 @@ private:
 			if (act_cnt[col]) {
 				if (deep_k[col] + act_cnt[col] - 1 != high_k[col]) {
 					const Coord2D coord = two_d.coord (col);
-					throw OPM_EXC ("Non-continuous column at (%d, %d)", coord.i, coord.j);
+					throw OPM_EXC ("Non-continuous column at (%d, %d)", coord.i(), coord.j());
 				}
 			}
 		}
@@ -228,7 +228,7 @@ private:
 			// since there is supposed to be a continuous range of elements in
 			// each column, we can calculate the relative position in the list
 			// based on the k part of the coordinate.
-			const int offset = ijk.k - deep_k[col];
+			const int offset = ijk.k() - deep_k[col];
 
 			// write the fine grid cell number in the column list; since we
 			// have calculated the position based on depth, the list will be
@@ -321,7 +321,8 @@ private:
 					if (ptr != classifier.end ()) {
 						classifier.erase (ptr);
 					}
-					classifier.insert (ptr, make_pair (node, prev.pivot (s.dim, s.dir)));
+					classifier.insert (ptr, make_pair (node,
+																						 prev.pivot (s.dim (), s.dir ())));
 				}
 
 				// after this loop, we have a map of each node local to the element,

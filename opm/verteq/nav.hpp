@@ -48,20 +48,27 @@
  * numbers.
  */
 struct Coord2D {
-	const int i;
-	const int j;
+	Coord2D (int i_, int j_) : m_i (i_), m_j (j_) { }
 
-	Coord2D (int i_, int j_) : i (i_), j (j_) {	}
+	int i() const { return m_i; }
+	int j() const { return m_j; }
+
+protected:
+	const int m_i;
+	const int m_j;
 };
 
 /// Index tuple in three-dimensional cornerpoint grid.
 struct Coord3D : public Coord2D {
-	const int k;
-
 	Coord3D (int i_, int j_, int k_)
 		: Coord2D (i_, j_)
-		, k (k_) {
+		, m_k (k_) {
 	}
+
+	int k() const { return m_k; }
+
+protected:
+	const int m_k;
 };
 
 // forward declaration
@@ -134,11 +141,8 @@ protected:
  */
 template <typename Dim>
 struct Side {
-	const Dim dim;
-	const Dir dir;
-
-	Side (Dim dim_, Dir dir_) : dim (dim_), dir (dir_) { }
-	Side (const Side& rhs) : dim (rhs.dim), dir (rhs.dir) {}
+	Side (Dim dim_, Dir dir_) : m_dim (dim_), m_dir (dir_) { }
+	Side (const Side& rhs) : m_dim (rhs.m_dim), m_dir (rhs.m_dir) { }
 
 	/**
 	 * Numeric tag of an enumeration of the sides. The sides are enumerated
@@ -148,13 +152,20 @@ struct Side {
 	 * @see UnstructuredGrid.cell_facetag
 	 */
 	int facetag () const {
-		return dim.val * Dir::COUNT + dir.val;
+		return dim().val * Dir::COUNT + dir().val;
 	}
 
 	/**
 	 * Construct a side value from the facetag stored in the grid structure
 	 */
 	static Side <Dim> from_tag (int tag);
+
+	Dim dim() const { return m_dim; }
+	Dir dir() const { return m_dir; }
+
+protected:
+	const Dim m_dim;
+	const Dir m_dir;
 };
 
 // specializations for the dimensions we work with
@@ -166,10 +177,15 @@ typedef Side <Dim3D> Side3D;
  * A corner is identified by directions in both dimensions.
  */
 struct Corn2D {
-	const Dir i;
-	const Dir j;
-	Corn2D (Dir i_, Dir j_) : i (i_), j (j_) { }
-	Corn2D (const Corn2D& rhs) : i (rhs.i), j (rhs.j) { }
+	Corn2D (Dir i_, Dir j_) : m_i (i_), m_j (j_) { }
+	Corn2D (const Corn2D& rhs) : m_i (rhs.m_i), m_j (rhs.m_j) { }
+
+	Dir i() const { return m_i; }
+	Dir j() const { return m_j; }
+
+protected:
+	const Dir m_i;
+	const Dir m_j;
 };
 
 /**
@@ -177,9 +193,8 @@ struct Corn2D {
  * one since we can project a corner onto the two-dimensional surface.
  */
 struct Corn3D : public Corn2D {
-	const Dir k;
-	Corn3D (Dir i_, Dir j_, Dir k_) : Corn2D (i_, j_), k (k_) { }
-	Corn3D (const Corn3D& rhs) : Corn2D (rhs), k (rhs.k) { }
+	Corn3D (Dir i_, Dir j_, Dir k_) : Corn2D (i_, j_), m_k (k_) { }
+	Corn3D (const Corn3D& rhs) : Corn2D (rhs), m_k (rhs.m_k) { }
 
 	/**
 	 * Initialize a new corner where one dimension has been (optionally)
@@ -190,10 +205,13 @@ struct Corn3D : public Corn2D {
 	 * they belong in.
 	 */
 	Corn3D pivot (Dim3D dim, Dir dir) {
-		return Corn3D (dim == Dim3D::X ? dir : i,
-									 dim == Dim3D::Y ? dir : j,
-									 dim == Dim3D::Z ? dir : k);
+		return Corn3D (dim == Dim3D::X ? dir : m_i,
+									 dim == Dim3D::Y ? dir : m_j,
+									 dim == Dim3D::Z ? dir : m_k);
 	}
+
+protected:
+	const Dir m_k;
 };
 
 /**
@@ -221,7 +239,7 @@ struct Cart2D {
 
 	/// Cartesian (flattened) index for a coordinate
 	elem_t cart_ndx (const coord_t& coord) const {
-		return coord.j * ni + coord.i;
+		return coord.j() * ni + coord.i();
 	}
 
 	/// Cartesian coordinate for a (flattened) index
@@ -241,7 +259,7 @@ struct Cart2D {
 	}
 
 	node_t node_ndx (const coord_t& coord, const Corn2D& corn) {
-		return (coord.j + corn.j.val) * (ni + 1) + (coord.i + corn.i.val);
+		return (coord.j() + corn.j().val) * (ni + 1) + (coord.i() + corn.i().val);
 	}
 };
 
