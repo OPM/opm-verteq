@@ -97,6 +97,7 @@ struct Dim2D {
 	const int val;
 
 	Dim2D (const Dim2D& rhs) : val (rhs.val) { }
+	bool operator == (const Dim2D& rhs) const { return val == rhs.val; }
 
 protected:
 	Dim2D (int i) : val (i) { }
