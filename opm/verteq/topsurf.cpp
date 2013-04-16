@@ -69,7 +69,7 @@ struct TopSurfBuilder {
 
 	// map from a two-dimensional Cartesian coordinate to the final
 	// id of an active element in the grid, or -1 if nothing is assigned
-	// this vector is first valid after elements() have been done
+	// this vector is first valid after create_elements() have been done
 	vector <int> elms;
 
 	TopSurfBuilder (const UnstructuredGrid& from, TopSurf& into)
@@ -90,10 +90,10 @@ struct TopSurfBuilder {
 		}
 
 		// create frame of the new top surface
-		dimensions ();
+		create_dimensions ();
 
 		// identify active columns in the grid
-		elements ();
+		create_elements ();
 	}
 
 	// various stages of the build process, supposed to be called in
@@ -101,7 +101,7 @@ struct TopSurfBuilder {
 	// make it more obvious what parts that needs to be shared between
 	// them)
 private:
-	void dimensions () {
+	void create_dimensions () {
 		// we are going to create two-dimensional grid
 		ts.dimensions = 2;
 		ts.cartdims[0] = two_d.ni;
@@ -109,7 +109,7 @@ private:
 		ts.cartdims[2] = 1;
 	}
 
-	void elements() {
+	void create_elements() {
 		// statistics of the deepest and highest active k-index of
 		// each column in the grid. to know each index into the column,
 		// we only need to know the deepest k and the count; the highest
