@@ -212,6 +212,7 @@ struct Cart2D {
 	// flattened indices, respectively
 	typedef Coord2D coord_t;
 	typedef int elem_t;
+	typedef int node_t;
 
 	/// Number of (possible) elements in the grid
 	int num_elems () const {
@@ -229,6 +230,18 @@ struct Cart2D {
 		const int i = strip.rem;
 		const int j = strip.quot;
 		return coord_t (i, j);
+	}
+
+	/**
+	 * As each element has points on both sides (in both dimensions), there
+	 * is an extra row and column of points compared to elements.
+	 */
+	int num_nodes () const {
+		return (ni + 1) * (nj + 1);
+	}
+
+	node_t node_ndx (const coord_t& coord, const Corn2D& corn) {
+		return (coord.j + corn.j.val) * (ni + 1) + (coord.i + corn.i.val);
 	}
 };
 

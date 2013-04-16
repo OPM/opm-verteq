@@ -8,7 +8,9 @@
 #include <algorithm> // min, max
 #include <climits> // INT_MIN, INT_MAX
 #include <cstdlib> // div
+#include <map>
 #include <memory> // auto_ptr
+#include <utility> // pair
 
 using namespace boost;
 using namespace Opm;
@@ -72,6 +74,11 @@ struct TopSurfBuilder {
 	// this vector is first valid after create_elements() have been done
 	vector <int> elms;
 
+	// map from a two-dimensional Cartesian node coordinate to the final
+	// id of active nodes in the grid, or -1 if nothing is assigned.
+	// this vector is first valid after create_nodes() have been done
+	vector <int> nodes;
+
 	TopSurfBuilder (const UnstructuredGrid& from, TopSurf& into)
 		// link to the fine grid for the duration of the construction
 		: fine_grid (from)
@@ -94,6 +101,9 @@ struct TopSurfBuilder {
 
 		// identify active columns in the grid
 		create_elements ();
+
+		// identify active points in the grid
+		create_nodes ();
 	}
 
 	// various stages of the build process, supposed to be called in
@@ -230,6 +240,151 @@ private:
 		// memory to work with
 		ts.cell_volumes = new double [ts.number_of_cells];
 		ts.cell_centroids = new double [ts.dimensions * ts.number_of_cells];
+	}
+
+	void create_nodes () {
+		// construct a dual Cartesian grid consisting of the points
+		const int num_nodes = two_d.num_nodes ();
+
+		// vectors which will hold the coordinates for each active point.
+		// at first we sum all the points, then we divide by the count to
+		// get the average. as long as the count is zero, there is no
+		// registered active point at this location
+		vector <double> x (num_nodes, 0.);
+		vector <double> y (num_nodes, 0.);
+		vector <int> cnt (num_nodes, 0);
+
+		// number of nodes needed in the top surface
+		int active_nodes = 0;
+
+		// tag of the top side in a cell; we're looking for this
+		const int top_tag = Side3D (Dim3D::Z, Dir::INC).facetag ();
+
+		// initial corner value. this could really be anything, since
+		// we expect all the fields to be overwritten.
+		const Corn3D blank (Dir::DEC, Dir::DEC, Dir::DEC);
+
+		// this map holds the classification of each node locally for the
+		// element being currently processed. we reuse the map to avoid
+		// needless memory allocations.
+		typedef map <int, Corn3D> cls_t;
+		cls_t classifier;
+
+		// loop through all active cells in the top surface
+		for (int col = 0; col < ts.number_of_cells; ++col) {
+			// get the highest element in this column; since we have them
+			// sorted by k-index this should be the last item in the
+			// extended column info, or one before the next column starts
+			const Cart3D::elem_t top_cell =
+					ts.col_cells [ts.col_cellpos[col+1] - 1];
+
+			// start afresh whenever we start working on a new element
+			classifier.clear ();
+			int top_face = -1;
+
+			// loop through all the faces of the top element
+			for (int face_pos = fine_grid.cell_facepos[top_cell];
+					 face_pos != fine_grid.cell_facepos[top_cell+1];
+					 ++face_pos) {
+
+				// get the (normal) dimension and direction of this face
+				const int this_tag = fine_grid.cell_facetag[face_pos];
+				Side3D s = Side3D::from_tag (this_tag);
+
+				// identifier of the face, which is the index in the next arary
+				const int face = fine_grid.cell_faces[face_pos];
+
+				// remember it if we've found the top face
+				if (this_tag == top_tag) {
+					if (top_face != -1) {
+						throw OPM_EXC ("More than one top face in element %d", top_cell);
+					}
+					top_face = face;
+				}
+
+				// loop through all nodes in this face, adding them to the
+				// classifier. when we are through with all the faces, we have
+				// found in which corner a node is, defined by a direction in
+				// each of the three dimensions
+				for (int node_pos = fine_grid.face_nodepos[face];
+						 node_pos != fine_grid.face_nodepos[face+1];
+						 ++node_pos) {
+					const int node = fine_grid.face_nodes[node_pos];
+
+					// locate pointer to data record ("iterator" in stl parlance)
+					// for this node, if it is already there. otherwise, just start
+					// out with some blank data (which eventually will get overwritten)
+					cls_t::iterator ptr = classifier.find (node);
+					Corn3D prev (ptr == classifier.end () ? blank : ptr->second);
+
+					// update the dimension in which this face is pointing
+					if (ptr != classifier.end ()) {
+						classifier.erase (ptr);
+					}
+					classifier.insert (ptr, make_pair (node, prev.pivot (s.dim, s.dir)));
+				}
+
+				// after this loop, we have a map of each node local to the element,
+				// classified into in which corner it is located (it cannot be in
+				// both directions in the same dimension -- then it would have to
+				// belong to two opposite faces, unless the grid is degenerated)
+			}
+
+			// cannot handle degenerate grids without top face properly
+			if (top_face == -1) {
+				throw OPM_EXC ("No top face in cell %d", top_cell);
+			}
+
+			// get the Cartesian ij coordinate of this cell
+			const Coord2D ij = two_d.coord (ts.global_cell [top_cell]);
+
+			// loop through all the nodes of the top face, and write their position
+			// into the corresponding two-d node. this has to be done separately
+			// after we have classified *all* the nodes of the element, in order for
+			// the corner values to be set correctly, i.e. we cannot merge this into
+			// the loop above.
+			for (int node_pos = fine_grid.face_nodepos[top_face];
+					 node_pos != fine_grid.face_nodepos[top_face+1];
+					 ++node_pos) {
+				const int node = fine_grid.face_nodes[node_pos];
+
+				// get which corner this node has; this returns a three-dimensional
+				// corner, but by using the base class part of it we automatically
+				// project it to a flat surface
+				cls_t::iterator ptr = classifier.find (node);
+				const Corn3D corn (ptr->second);
+
+				// get the structured index for this particular corner
+				const Cart2D::node_t cart_node = two_d.node_ndx(ij, corn);
+
+				// add these coordinates to the average position for this junction
+				// if we activate a corner, then add it to the total count
+				x[cart_node] += fine_grid.node_coordinates[node+0];
+				y[cart_node] += fine_grid.node_coordinates[node+1];
+				if (!cnt[cart_node]++) {
+					++active_nodes;
+				}
+			}
+		}
+
+		// after this loop we the accumulated coordinates for each of the
+		// corners that are part of active elements (the nodes that are
+		// needed in the top surface)
+
+		// assign identifiers and find average coordinate for each point
+		ts.number_of_nodes = active_nodes;
+		ts.node_coordinates = new double [active_nodes * Dim2D::COUNT];
+		nodes.resize (num_nodes, -1);
+		int next_node_id = 0;
+		for (int cart_node = 0; cart_node != num_nodes; ++cart_node) {
+			if (cnt[cart_node]) {
+				nodes[cart_node] = next_node_id;
+				const int start = Dim2D::COUNT * next_node_id;
+				ts.node_coordinates[start+0] = x[cart_node] / cnt[cart_node];
+				ts.node_coordinates[start+1] = y[cart_node] / cnt[cart_node];
+				++next_node_id;
+			}
+		}
 	}
 };
 
