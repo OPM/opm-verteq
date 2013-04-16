@@ -29,7 +29,7 @@ using namespace std;
  * only in the specified range, e.g. cells in a column.
  */
 template <typename T> iterator_range <const T*>
-rl_iter (const int ndx, const int* const& pos, const T* const& values) {
+run_len_iter (const int ndx, const int* const& pos, const T* const& values) {
 	// skip all the values that belongs to ranges before us,
 	// then we get to the start of our own range
 	const T* begin_addr = &values [pos [ndx]];
@@ -43,7 +43,7 @@ rl_iter (const int ndx, const int* const& pos, const T* const& values) {
 
 iterator_range <const int*>
 TopSurf::column (int ndx_2d) {
-	return rl_iter <const int> (ndx_2d, this->col_cellpos, this->col_cells);
+	return run_len_iter <const int> (ndx_2d, this->col_cellpos, this->col_cells);
 }
 
 /**
