@@ -64,6 +64,9 @@ struct Coord3D : public Coord2D {
 	}
 };
 
+// forward declaration
+template <typename Dim > class Side;
+
 /// Type-safe enumeration of axis directions.
 struct Dir {
 	/// Towards the end of the axis with lesser numbers.
@@ -83,6 +86,8 @@ struct Dir {
 protected:
 	/// Private constructor to avoid initialization outside domain
 	Dir (int i) : val (i) { }
+
+	template <typename Dim> friend class Side;
 };
 
 /// Type-safe enumeration of axis dimensions
@@ -101,23 +106,94 @@ struct Dim2D {
 
 protected:
 	Dim2D (int i) : val (i) { }
+
+	friend class Side <Dim2D>;
 };
 
-/// Value type that addresses sides in a two-dimensional grid cell
-struct Side2D {
-	const Dim2D dim;
+/// Type-safe enumeration of axis dimensions in 3D
+struct Dim3D : public Dim2D {
+	// added dimension in 3D
+	static const Dim3D Z; // = 2
+
+	// number of dimensions (shadows Dim2D)
+	static const int COUNT = 3;
+
+	Dim3D (const Dim3D& rhs) : Dim2D (rhs.val) { }
+	bool operator == (const Dim2D& rhs) const { return val == rhs.val; }
+
+protected:
+	Dim3D (int i) : Dim2D (i) { }
+
+	friend class Side <Dim3D>;
+};
+
+/**
+ * Value type that addresses sides in a n-dimensional grid cell.
+ * A side is identified by a dimensions and a direction in that
+ * dimension.
+ */
+template <typename Dim>
+struct Side {
+	const Dim dim;
 	const Dir dir;
 
-	Side2D (Dim2D dim_, Dir dir_) : dim (dim_), dir (dir_) { }
-	Side2D (const Side2D& rhs) : dim (rhs.dim), dir (rhs.dir) {}
+	Side (Dim dim_, Dir dir_) : dim (dim_), dir (dir_) { }
+	Side (const Side& rhs) : dim (rhs.dim), dir (rhs.dir) {}
+
+	/**
+	 * Numeric tag of an enumeration of the sides. The sides are enumerated
+	 * in the same order the dimensions are specified in the grid; I, J then
+	 * K, wih the decreasing direction first, then the increasing direction.
+	 *
+	 * @see UnstructuredGrid.cell_facetag
+	 */
+	int facetag () const {
+		return dim.val * Dir::COUNT + dir.val;
+	}
+
+	/**
+	 * Construct a side value from the facetag stored in the grid structure
+	 */
+	static Side <Dim> from_tag (int tag);
 };
 
-/// Value type that addresses corners in a two-dimensional grid cell
+// specializations for the dimensions we work with
+typedef Side <Dim2D> Side2D;
+typedef Side <Dim3D> Side3D;
+
+/**
+ * Value type that addresses corners in a two-dimensional grid cell.
+ * A corner is identified by directions in both dimensions.
+ */
 struct Corn2D {
 	const Dir i;
 	const Dir j;
 	Corn2D (Dir i_, Dir j_) : i (i_), j (j_) { }
 	Corn2D (const Corn2D& rhs) : i (rhs.i), j (rhs.j) { }
+};
+
+/**
+ * Three-dimensional corner type. It inherits from the two-dimensional
+ * one since we can project a corner onto the two-dimensional surface.
+ */
+struct Corn3D : public Corn2D {
+	const Dir k;
+	Corn3D (Dir i_, Dir j_, Dir k_) : Corn2D (i_, j_), k (k_) { }
+	Corn3D (const Corn3D& rhs) : Corn2D (rhs), k (rhs.k) { }
+
+	/**
+	 * Initialize a new corner where one dimension has been (optionally)
+	 * pivoted in another direction. We use this to correct classifier
+	 * information about a corner; by enumerating all the vertices of an
+	 * element through the sides (pivoting a corner to the dimension in
+	 * which its containing face is), we can figure out in which corner
+	 * they belong in.
+	 */
+	Corn3D pivot (Dim3D dim, Dir dir) {
+		return Corn3D (dim == Dim3D::X ? dir : i,
+									 dim == Dim3D::Y ? dir : j,
+									 dim == Dim3D::Z ? dir : k);
+	}
 };
 
 /**
