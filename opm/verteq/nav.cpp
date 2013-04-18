@@ -21,3 +21,10 @@ Side <Dim>::from_tag (int tag) {
 // template instantiation to satisfy linker
 template Side <Dim2D> Side <Dim2D>::from_tag (int);
 template Side <Dim3D> Side <Dim3D>::from_tag (int);
+
+// these needs to be initialized here instead of in the header
+// because vector::resize takes a reference to the data and not
+// a value as a parameter (to avoid copying)
+const int Cart2D::NO_ELEM = -1;
+const int Cart2D::NO_FACE = -1;
+const int Cart2D::NO_NODE = -1;

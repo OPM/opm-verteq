@@ -70,12 +70,12 @@ struct TopSurfBuilder {
 	Cart2D two_d;
 
 	// map from a two-dimensional Cartesian coordinate to the final
-	// id of an active element in the grid, or -1 if nothing is assigned
+	// id of an active element in the grid, or NO_ELEM if nothing is assigned
 	// this vector is first valid after create_elements() have been done
 	vector <int> elms;
 
 	// map from a two-dimensional Cartesian node coordinate to the final
-	// id of active nodes in the grid, or -1 if nothing is assigned.
+	// id of active nodes in the grid, or NO_NODE if nothing is assigned.
 	// this vector is first valid after create_nodes() have been done
 	vector <int> nodes;
 
@@ -190,7 +190,7 @@ private:
 
 		// now we know enough to start assigning ids to active columns.if
 		// memory is a real shortage, we could reuse the act_cnt array for this.
-		elms.resize (num_cols, -1);
+		elms.resize (num_cols, Cart2D::NO_ELEM);
 
 		// loop through the grid and assign an id for all columns that have
 		// active elements
@@ -280,7 +280,7 @@ private:
 
 			// start afresh whenever we start working on a new element
 			classifier.clear ();
-			int top_face = -1;
+			int top_face = Cart2D::NO_FACE;
 
 			// loop through all the faces of the top element
 			for (int face_pos = fine_grid.cell_facepos[top_cell];
@@ -296,7 +296,7 @@ private:
 
 				// remember it if we've found the top face
 				if (this_tag == top_tag) {
-					if (top_face != -1) {
+					if (top_face != Cart2D::NO_FACE) {
 						throw OPM_EXC ("More than one top face in element %d", top_cell);
 					}
 					top_face = face;
@@ -332,7 +332,7 @@ private:
 			}
 
 			// cannot handle degenerate grids without top face properly
-			if (top_face == -1) {
+			if (top_face == Cart2D::NO_FACE) {
 				throw OPM_EXC ("No top face in cell %d", top_cell);
 			}
 
@@ -375,7 +375,7 @@ private:
 		// assign identifiers and find average coordinate for each point
 		ts.number_of_nodes = active_nodes;
 		ts.node_coordinates = new double [active_nodes * Dim2D::COUNT];
-		nodes.resize (num_nodes, -1);
+		nodes.resize (num_nodes, Cart2D::NO_NODE);
 		int next_node_id = 0;
 		for (int cart_node = 0; cart_node != num_nodes; ++cart_node) {
 			if (cnt[cart_node]) {

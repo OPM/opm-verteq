@@ -232,6 +232,11 @@ struct Cart2D {
 	typedef int elem_t;
 	typedef int node_t;
 
+	/// Value used to indicate that a reference is not to a valid element
+	static const int NO_ELEM; // = -1
+	static const int NO_FACE; // = -1
+	static const int NO_NODE; // = -1
+
 	/// Number of (possible) elements in the grid
 	int num_elems () const {
 		return ni * nj;
