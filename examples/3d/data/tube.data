@@ -1,8 +1,7 @@
 RUNSPEC
 
 TITLE
-	'Example of how to do CO2 sequestration modelling using opm-core.'
-/
+Example of how to do CO2 sequestration modelling using opm-core.
 
 DIMENS
 	3	1	2
