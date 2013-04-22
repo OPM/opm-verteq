@@ -89,6 +89,7 @@ struct Dir {
 	const int val;
 
 	Dir (const Dir& rhs) : val (rhs.val) {}
+	bool operator == (const Dir& rhs) const { return val == rhs.val; }
 
 protected:
 	/// Private constructor to avoid initialization outside domain
