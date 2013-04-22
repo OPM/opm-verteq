@@ -91,6 +91,9 @@ struct Dir {
 	Dir (const Dir& rhs) : val (rhs.val) {}
 	bool operator == (const Dir& rhs) const { return val == rhs.val; }
 
+	/// Opposite direction to this one
+	Dir opposite () const { return Dir (-(val - 1)); }
+
 protected:
 	/// Private constructor to avoid initialization outside domain
 	Dir (int i) : val (i) { }
@@ -111,6 +114,9 @@ struct Dim2D {
 
 	Dim2D (const Dim2D& rhs) : val (rhs.val) { }
 	bool operator == (const Dim2D& rhs) const { return val == rhs.val; }
+
+	/// Orthogonal dimension to this one
+	Dim2D orthogonal () const { return Dim2D (-(val - 1)); }
 
 protected:
 	Dim2D (int i) : val (i) { }
