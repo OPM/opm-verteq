@@ -163,9 +163,23 @@ struct Side {
 	Dim dim() const { return m_dim; }
 	Dir dir() const { return m_dir; }
 
+	/**
+	 * Number of possible sides in an element
+	 */
+	static const int COUNT = Dim::COUNT * Dir::COUNT;
+
+	/**
+	 * Iterator for all possible sides
+	 */
+	static const Side* begin () { return &ALL[0]; }
+	static const Side* end () { return &ALL[COUNT]; }
+
 protected:
 	const Dim m_dim;
 	const Dir m_dir;
+
+	// fixed enumeration of all sides
+	static const Side ALL [];
 };
 
 // specializations for the dimensions we work with

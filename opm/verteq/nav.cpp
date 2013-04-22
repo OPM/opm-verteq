@@ -28,3 +28,12 @@ template Side <Dim3D> Side <Dim3D>::from_tag (int);
 const int Cart2D::NO_ELEM = -1;
 const int Cart2D::NO_FACE = -1;
 const int Cart2D::NO_NODE = -1;
+
+// enumeration of all possible sides
+template <>
+const Side <Dim2D> Side <Dim2D>::ALL[] = {
+	Side (Dim2D::X, Dir::DEC), // I-
+	Side (Dim2D::X, Dir::INC), // I+
+	Side (Dim2D::Y, Dir::DEC), // J-
+	Side (Dim2D::Y, Dir::INC)  // J+
+};
