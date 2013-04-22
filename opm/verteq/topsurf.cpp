@@ -79,6 +79,11 @@ struct TopSurfBuilder {
 	// this vector is first valid after create_nodes() have been done
 	vector <int> nodes;
 
+	// map from a two-dimensional Cartesion face coordinate to the final
+	// id of active faces in the grid, or NO_FACE if nothing is assigned.
+	// this vector is first valid after create_faces() have been done.
+	vector <int> faces;
+
 	TopSurfBuilder (const UnstructuredGrid& from, TopSurf& into)
 		// link to the fine grid for the duration of the construction
 		: fine_grid (from)
@@ -104,6 +109,9 @@ struct TopSurfBuilder {
 
 		// identify active points in the grid
 		create_nodes ();
+
+		// identify active faces in the grid
+		create_faces ();
 	}
 
 	// various stages of the build process, supposed to be called in
@@ -386,6 +394,192 @@ private:
 				++next_node_id;
 			}
 		}
+
+		// TODO: check for degeneracy by comparing each node's coordinates
+		// with those in the opposite direction in both dimensions (separately)
+	}
+
+	void create_faces () {
+		// number of possible (but not necessarily active) faces
+		const int num_faces = two_d.num_faces ();
+
+		// assign identifiers into this array. start out with the value
+		// NO_FACE which means that unless we write in an id, the face
+		// is not active
+		faces.resize (num_faces, Cart2D::NO_FACE);
+
+		// a face will be referenced from two elements (apart from boundary),
+		// denoted the "primary" and "secondary" neighbours. the nodes in a
+		// face needs to be specified so that the normal to the directed LINE_NODES
+		// points towards the element center of the *primary* neighbour.
+
+		// we use the convention that every face that are in the J-direction
+		// are directed from decreasing direction to increasing direction,
+		// whereas every face that are in the I-direction are directed the
+		// opposite way, from increasing to decreasing. this way, an element
+		// is primary neighbour for a face if the face is on side which is
+		// classified as decreasing, relative to the center, and secondary
+		// if the face is in the increasing direction of whatever axis.
+
+		//                 I+             (I+,J+)     (I+,J-)
+		//             o <---- o               o <---- o
+		//             |       |               |       |
+		//          J+ |       | J-            |       |
+		//             v       v               v       v
+		//             o <---- o               o <---- o
+		//                 I-             (I-,J+)     (I-,J-)
+
+		// allocate two arrays that will hold the global ids of the two
+		// elements on each side, or NO_ELEM if there is no active element
+		// on that side. if both sides are NO_ELEM then the face can be
+		// optimized away from the resulting grid.
+		vector <int> pri_elem (num_faces, Cart2D::NO_ELEM);
+		vector <int> sec_elem (num_faces, Cart2D::NO_ELEM);
+
+		vector <int> src (num_faces, Cart2D::NO_NODE);
+		vector <int> dst (num_faces, Cart2D::NO_NODE);
+
+		// keep count on how many faces that actually have at least one
+		// active neighbouring element
+		int active_faces = 0;
+
+		// loop through all the active elements in the grid, and write
+		// their identifier in the neighbour array for their faces
+		for (int j = 0; j != two_d.nj; ++j) {
+			for (int i = 0; i != two_d.ni; ++i) {
+				// where are we in the grid?
+				const Coord2D coord (i, j);
+				const int col = two_d.cart_ndx (coord);
+
+				// check if this element is active; is there an id assignment?
+				const int elem_glob_id = elms[col];
+				if (elem_glob_id != Cart2D::NO_ELEM) {
+
+					// loop through all sides of this element; by assigning identities
+					// to the faces in this manner, the faces around each element are
+					// relatively local to eachother in the array.
+					for (const Side2D* s = Side2D::begin(); s != Side2D::end(); ++s) {
+						// cartesian index of this face, i.e. index just depending on the
+						// extent of the grid, not whether face is active or not
+						const int cart_face = two_d.face_ndx (coord, *s);
+
+						// select primary or secondary neighbour collection based on
+						// the direction of the face relative to the center of the
+						// element, see discussion above
+						const bool is_primary = s->dir () == Dir::DEC;
+						vector <int>& neighbour = is_primary ? pri_elem : sec_elem;
+						vector <int>& other = is_primary ? sec_elem : pri_elem;
+
+						// put this identifier in there
+						if (neighbour[cart_face] != Cart2D::NO_ELEM) {
+							throw OPM_EXC ("Duplicate neighbour assignment in column (%d,%d)",
+														 coord.i(), coord.j());
+						}
+						neighbour[cart_face] = elem_glob_id;
+
+						// if this was the first time we assigned a neighbour to the
+						// face, then count it as active and assign an identity
+						if (other[cart_face] == Cart2D::NO_ELEM) {
+							faces[cart_face] = active_faces++;
+
+							// faces that are in the I-dimension (I- and I+) starts at the DEC
+							// direction in the J-dimension, where as for the faces in the J-
+							// dimension it is opposite
+							const Dir src_dir = s->dim () == Dim2D::X ? Dir::DEC : Dir::INC;
+							const Dir dst_dir = src_dir.opposite ();
+
+							// use the direction of the side for its dimension, as both the corners
+							// of the side will be here, and use the two other directions for the
+							// remaining dimension. the trick is to know in which corner the face
+							// should start, see above.
+							const Corn2D src_corn (s->dim () == Dim2D::X ? s->dir () : src_dir,
+																		 s->dim () == Dim2D::X ? src_dir : s->dir ());
+							const Corn2D dst_corn (s->dim () == Dim2D::X ? s->dir () : dst_dir,
+																		 s->dim () == Dim2D::X ? dst_dir : s->dir ());
+
+							// get the identity of the two corners, and take note of these
+							const int src_cart_ndx = two_d.node_ndx (coord, src_corn);
+							const int dst_cart_ndx = two_d.node_ndx (coord, dst_corn);
+							src[cart_face] = nodes[src_cart_ndx];
+							dst[cart_face] = nodes[dst_cart_ndx];
+						}
+					}
+				}
+			}
+		}
+		// after this loop we have a map of all possible faces, and know
+		// how many of these are active.
+
+		// each cell has 4 sides in 2D; we assume no degenerate sides
+		const int QUAD_SIDES = Dim2D::COUNT * Dir::COUNT;
+		const int num_sides = QUAD_SIDES * active_faces;
+
+		// nodes in faces; each face in 2D is only 1D, so simplices always
+		// have only two nodes (a LINE_NODES, with corners in each direction)
+		const int LINE_NODES = Dim1D::COUNT * Dir::COUNT;
+		const int num_corns = LINE_NODES * active_faces;
+
+		// allocate memory; this will be freed in the TopSurf destructor
+		ts.face_nodes = new int [num_corns];
+		ts.face_nodepos = new int [active_faces + 1];
+		ts.face_cells = new int [2 * active_faces];
+		ts.cell_faces = new int [num_sides];
+		ts.cell_facepos = new int [ts.number_of_cells + 1];
+		ts.cell_facetag = new int [num_sides];
+		ts.number_of_faces = active_faces;
+
+		// we need to allocate memory for computeGeometry to fill
+		ts.face_centroids = new double [Dim2D::COUNT * active_faces];
+		ts.face_areas = new double [active_faces];
+		ts.face_normals = new double [Dim2D::COUNT * active_faces];
+
+		// write the internal data structures to UnstructuredGrid representation
+
+		// face <-> node topology
+		for (int cart_face = 0; cart_face != num_faces; ++cart_face) {
+			const int face_glob_id = faces[cart_face];
+			if (face_glob_id != Cart2D::NO_FACE) {
+				// since each face has exactly two coordinates, we can easily
+				// calculate the position based only on the face number
+				const int start_pos = LINE_NODES * face_glob_id;
+				ts.face_nodepos[face_glob_id] = start_pos;
+				ts.face_nodes[start_pos + 0] = src[cart_face];
+				ts.face_nodes[start_pos + 1] = dst[cart_face];
+
+				// neighbours should already be stored in the right orientation
+				ts.face_cells[face_glob_id + 0] = pri_elem[cart_face];
+				ts.face_cells[face_glob_id + 1] = sec_elem[cart_face];
+			}
+		}
+		ts.face_nodepos[ts.number_of_faces] = LINE_NODES * ts.number_of_faces;
+
+		// cell <-> face topology
+		for (int j = 0; j != two_d.nj; ++j) {
+			for (int i = 0; i != two_d.ni; ++i) {
+				// get various indices for this element
+				const Coord2D coord (i, j);
+				const int cart_elem = two_d.cart_ndx (coord);
+				const int elem_glob_id = elms[cart_elem];
+
+				// each element is assumed to be a quad, so we can calculate the
+				// number of accumulated sides based on the absolute id
+				const int start_pos = QUAD_SIDES * elem_glob_id;
+				ts.cell_facepos[elem_glob_id] = start_pos;
+
+				// write all faces for this element
+				for (const Side2D* s = Side2D::begin(); s != Side2D::end(); ++s) {
+					// get the global id of this face
+					const int face_cart_ndx = two_d.face_ndx (coord, *s);
+					const int face_glob_id = faces[face_cart_ndx];
+
+					// the face tag can also serve as an offset into a regular element
+					const int ofs = s->facetag ();
+					ts.cell_faces[start_pos + ofs] = face_glob_id;
+					ts.cell_facetag[start_pos + ofs] = ofs;
+				}
+			}
+		}
+		ts.cell_facepos[ts.number_of_cells] = QUAD_SIDES * ts.number_of_cells;
 	}
 };
 
