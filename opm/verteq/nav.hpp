@@ -245,6 +245,7 @@ struct Cart2D {
 	typedef Coord2D coord_t;
 	typedef int elem_t;
 	typedef int node_t;
+	typedef int face_t;
 
 	/// Value used to indicate that a reference is not to a valid element
 	static const int NO_ELEM; // = -1
@@ -279,6 +280,39 @@ struct Cart2D {
 
 	node_t node_ndx (const coord_t& coord, const Corn2D& corn) {
 		return (coord.j() + corn.j().val) * (ni + 1) + (coord.i() + corn.i().val);
+	}
+
+	/**
+	 * Each column has one more faces than there are rows, and each row
+	 * has one more face than there are columns, due to the boundary.
+	 */
+	int num_faces () const {
+		// there are ni+1 faces oriented in j-direction in each column,
+		// for a total of (ni+1)*nj, and nj+1 faces in i-direction in
+		// each row, for a total of (nj+1)*ni.
+		return (ni + 1) * nj + ni * (nj + 1);
+	}
+
+	/**
+	 * Translate element coordinate plus relative side of this into a
+	 * Cartesian index of the face.
+	 */
+	face_t face_ndx (const coord_t& coord, const Side2D& side) {
+		// flags that code 1 (include) or 0 (don't) for each of the tests
+		const int dirv = side.dir().val;
+		const int idim = side.dim() == Dim2D::X ? 1 : 0;
+		const int idir = idim ? dirv : 0;
+		const int jdir = idim ? 0 : dirv;
+		// there is a left side and a lower side face for each element in a
+		// column, plus one face at the top of each column; 2*ni+1. the j-
+		// coordinate plus one extra if we are selecting the right face, tells
+		// us which column which is to the left of or "above" the face.
+		// if the side is in the i-direction to the center of the element, then
+		// the face is aligned with the j axis, so we skip idim*ni i-aligned
+		// faces before it.
+		// finally, determine the row by using the i-coordinate, and i-direction
+		// to determine whether it is the lower or upper face (if applicable).
+		return (coord.j() + jdir) * (2 * ni + 1) + (idim * ni) + (coord.i() + idir);
 	}
 };
 
