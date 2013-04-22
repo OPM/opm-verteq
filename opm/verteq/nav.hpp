@@ -101,8 +101,12 @@ protected:
 	template <typename Dim> friend class Side;
 };
 
+struct Dim1D {
+	static const int COUNT = 1;
+};
+
 /// Type-safe enumeration of axis dimensions
-struct Dim2D {
+struct Dim2D : public Dim1D {
 	// two spatial directions
 	static const Dim2D X; // = 0
 	static const Dim2D Y; // = 1
