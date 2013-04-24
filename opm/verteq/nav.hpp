@@ -8,6 +8,8 @@
 #include <opm/core/grid.h>
 #endif
 
+#include <cstdlib>	// div_t
+
 /**
  * There are three types of indices used in this module:
  *
@@ -275,7 +277,7 @@ struct Cart2D {
 
 	/// Cartesian coordinate for a (flattened) index
 	coord_t coord (const elem_t& cart_ndx) const {
-		const div_t strip = div (cart_ndx, ni);
+		const std::div_t strip = std::div (cart_ndx, ni);
 		const int i = strip.rem;
 		const int j = strip.quot;
 		return coord_t (i, j);
