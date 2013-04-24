@@ -295,15 +295,15 @@ private:
 			// get the highest element in this column; since we have them
 			// sorted by k-index this should be the first item in the
 			// extended column info
-			const Cart3D::elem_t top_cell = ts.col_cells [ts.col_cellpos[col]];
+			const Cart3D::elem_t top_cell_glob_id = ts.col_cells [ts.col_cellpos[col]];
 
 			// start afresh whenever we start working on a new element
 			classifier.clear ();
-			int top_face = Cart2D::NO_FACE;
+			int top_face_glob_id = Cart2D::NO_FACE;
 
 			// loop through all the faces of the top element
-			for (int face_pos = fine_grid.cell_facepos[top_cell];
-					 face_pos != fine_grid.cell_facepos[top_cell+1];
+			for (int face_pos = fine_grid.cell_facepos[top_cell_glob_id];
+					 face_pos != fine_grid.cell_facepos[top_cell_glob_id+1];
 					 ++face_pos) {
 
 				// get the (normal) dimension and direction of this face
@@ -311,29 +311,29 @@ private:
 				Side3D s = Side3D::from_tag (this_tag);
 
 				// identifier of the face, which is the index in the next arary
-				const int face = fine_grid.cell_faces[face_pos];
+				const int face_glob_id = fine_grid.cell_faces[face_pos];
 
 				// remember it if we've found the top face
 				if (this_tag == top_tag) {
-					if (top_face != Cart2D::NO_FACE) {
-						throw OPM_EXC ("More than one top face in element %d", top_cell);
+					if (top_face_glob_id != Cart2D::NO_FACE) {
+						throw OPM_EXC ("More than one top face in element %d", top_cell_glob_id);
 					}
-					top_face = face;
+					top_face_glob_id = face_glob_id;
 				}
 
 				// loop through all nodes in this face, adding them to the
 				// classifier. when we are through with all the faces, we have
 				// found in which corner a node is, defined by a direction in
 				// each of the three dimensions
-				for (int node_pos = fine_grid.face_nodepos[face];
-						 node_pos != fine_grid.face_nodepos[face+1];
+				for (int node_pos = fine_grid.face_nodepos[face_glob_id];
+						 node_pos != fine_grid.face_nodepos[face_glob_id+1];
 						 ++node_pos) {
-					const int node = fine_grid.face_nodes[node_pos];
+					const int node_glob_id = fine_grid.face_nodes[node_pos];
 
 					// locate pointer to data record ("iterator" in stl parlance)
 					// for this node, if it is already there. otherwise, just start
 					// out with some blank data (which eventually will get overwritten)
-					cls_t::iterator ptr = classifier.find (node);
+					cls_t::iterator ptr = classifier.find (node_glob_id);
 					Corn3D prev (ptr == classifier.end () ? blank : ptr->second);
 
 					// update the dimension in which this face is pointing
@@ -341,7 +341,7 @@ private:
 						classifier.erase (ptr);
 					}
 					const Corn3D upd_corn = prev.pivot (s.dim(), s.dir());
-					classifier.insert (make_pair (node, upd_corn));
+					classifier.insert (make_pair (node_glob_id, upd_corn));
 				}
 
 				// after this loop, we have a map of each node local to the element,
@@ -351,27 +351,28 @@ private:
 			}
 
 			// cannot handle degenerate grids without top face properly
-			if (top_face == Cart2D::NO_FACE) {
-				throw OPM_EXC ("No top face in cell %d", top_cell);
+			if (top_face_glob_id == Cart2D::NO_FACE) {
+				throw OPM_EXC ("No top face in cell %d", top_cell_glob_id);
 			}
 
 			// get the Cartesian ij coordinate of this cell
-			const Coord2D ij = two_d.coord (ts.global_cell [top_cell]);
+			const Cart2D::elem_t top_cell_cart_ndx = ts.global_cell [top_cell_glob_id];
+			const Coord2D ij = two_d.coord (top_cell_cart_ndx);
 
 			// loop through all the nodes of the top face, and write their position
 			// into the corresponding two-d node. this has to be done separately
 			// after we have classified *all* the nodes of the element, in order for
 			// the corner values to be set correctly, i.e. we cannot merge this into
 			// the loop above.
-			for (int node_pos = fine_grid.face_nodepos[top_face];
-					 node_pos != fine_grid.face_nodepos[top_face+1];
+			for (int node_pos = fine_grid.face_nodepos[top_face_glob_id];
+					 node_pos != fine_grid.face_nodepos[top_face_glob_id+1];
 					 ++node_pos) {
-				const int node = fine_grid.face_nodes[node_pos];
+				const int node_glob_id = fine_grid.face_nodes[node_pos];
 
 				// get which corner this node has; this returns a three-dimensional
 				// corner, but by using the base class part of it we automatically
 				// project it to a flat surface
-				cls_t::iterator ptr = classifier.find (node);
+				cls_t::iterator ptr = classifier.find (node_glob_id);
 				const Corn3D corn (ptr->second);
 
 				// get the structured index for this particular corner
@@ -379,8 +380,8 @@ private:
 
 				// add these coordinates to the average position for this junction
 				// if we activate a corner, then add it to the total count
-				x[cart_node] += fine_grid.node_coordinates[node+0];
-				y[cart_node] += fine_grid.node_coordinates[node+1];
+				x[cart_node] += fine_grid.node_coordinates[Dim3D::COUNT*node_glob_id+0];
+				y[cart_node] += fine_grid.node_coordinates[Dim3D::COUNT*node_glob_id+1];
 				if (!cnt[cart_node]++) {
 					++active_nodes;
 				}
