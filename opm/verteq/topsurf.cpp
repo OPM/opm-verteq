@@ -153,10 +153,10 @@ private:
 		// initialize these to values that are surely out of range, so that
 		// the first invocation of min or max always set the value. we use
 		// this to detect whether anything was written later on. since the
-		// numbering of the grid starts at the bottom, then the deepest cell
-		// has the *lowest* k-index, thus we need a value greater than all
-		vector <int> deep_k (num_cols, INT_MAX);
-		vector <int> high_k (num_cols, INT_MIN);
+		// numbering of the grid starts at the top, then the deepest cell
+		// has the *largest* k-index, thus we need a value smaller than all
+		vector <int> deep_k (num_cols, INT_MIN);
+		vector <int> high_k (num_cols, INT_MAX);
 
 		// loop once through the fine grid to gather statistics of the
 		// size of the surface so we know what to allocate
@@ -172,10 +172,10 @@ private:
 			// figure out which column this item belongs to (in 2D)
 			const Cart2D::elem_t col = two_d.cart_ndx (ijk);
 
-			// update the statistics for this column; 'deepest' is the lowest
-			// k-index seen so far, 'highest' is the highest (ehm)
-			deep_k[col] = min (deep_k[col], ijk.k());
-			high_k[col] = max (high_k[col], ijk.k());
+			// update the statistics for this column; 'deepest' is the largest
+			// k-index seen so far, 'highest' is the smallest (ehm)
+			deep_k[col] = max (deep_k[col], ijk.k());
+			high_k[col] = min (high_k[col], ijk.k());
 
 			// we have seen an element in this column; it becomes active. only
 			// columns with active cells will get active elements in the surface
@@ -190,7 +190,7 @@ private:
 		// this must be the case to assume that the entire column can be merged
 		for (int col = 0; col < num_cols; ++col) {
 			if (act_cnt[col]) {
-				if (deep_k[col] + act_cnt[col] - 1 != high_k[col]) {
+				if (high_k[col] + act_cnt[col] - 1 != deep_k[col]) {
 					const Coord2D coord = two_d.coord (col);
 					throw OPM_EXC ("Non-continuous column at (%d, %d)", coord.i(), coord.j());
 				}
@@ -248,7 +248,7 @@ private:
 			// since there is supposed to be a continuous range of elements in
 			// each column, we can calculate the relative position in the list
 			// based on the k part of the coordinate.
-			const int offset = ijk.k() - deep_k[col];
+			const int offset = ijk.k() - high_k[col];
 
 			// write the fine grid cell number in the column list; since we
 			// have calculated the position based on depth, the list will be
@@ -278,7 +278,7 @@ private:
 		int active_nodes = 0;
 
 		// tag of the top side in a cell; we're looking for this
-		const int top_tag = Side3D (Dim3D::Z, Dir::INC).facetag ();
+		const int top_tag = Side3D (Dim3D::Z, Dir::DEC).facetag ();
 
 		// initial corner value. this could really be anything, since
 		// we expect all the fields to be overwritten.
@@ -293,10 +293,9 @@ private:
 		// loop through all active cells in the top surface
 		for (int col = 0; col < ts.number_of_cells; ++col) {
 			// get the highest element in this column; since we have them
-			// sorted by k-index this should be the last item in the
-			// extended column info, or one before the next column starts
-			const Cart3D::elem_t top_cell =
-					ts.col_cells [ts.col_cellpos[col+1] - 1];
+			// sorted by k-index this should be the first item in the
+			// extended column info
+			const Cart3D::elem_t top_cell = ts.col_cells [ts.col_cellpos[col]];
 
 			// start afresh whenever we start working on a new element
 			classifier.clear ();
