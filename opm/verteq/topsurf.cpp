@@ -4,6 +4,7 @@
 #include <opm/verteq/nav.hpp>
 #include <opm/verteq/topsurf.hpp>
 #include <opm/core/utility/exc.hpp>
+#include <boost/io/ios_state.hpp> // ios_all_saver
 #include <boost/range/iterator_range.hpp>
 #include <algorithm> // min, max
 #include <climits> // INT_MIN, INT_MAX
@@ -46,6 +47,17 @@ run_len_iter (const int ndx, const int* const& pos, const T* const& values) {
 iterator_range <const int*>
 TopSurf::column (int ndx_2d) {
 	return run_len_iter <const int> (ndx_2d, this->col_cellpos, this->col_cells);
+}
+
+/// Helper routine to print of map
+template <typename T, typename U>
+void dump_map (const map<T, U>& m) {
+	for (typename map<T, U>::const_iterator it = m.begin(); it != m.end(); ++it) {
+		boost::io::ios_all_saver state (cerr);
+		cerr << it->first << ":\t";
+		state.restore ();
+		cerr << it->second << endl;
+	}
 }
 
 /**

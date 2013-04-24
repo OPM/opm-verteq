@@ -9,6 +9,7 @@
 #endif
 
 #include <cstdlib>	// div_t
+#include <iosfwd>   // ostream
 
 /**
  * There are three types of indices used in this module:
@@ -58,6 +59,8 @@ struct Coord2D {
 protected:
 	const int m_i;
 	const int m_j;
+
+	friend std::ostream& operator << (std::ostream& s, const Coord2D& c);
 };
 
 /// Index tuple in three-dimensional cornerpoint grid.
@@ -71,6 +74,8 @@ struct Coord3D : public Coord2D {
 
 protected:
 	const int m_k;
+
+	friend std::ostream& operator << (std::ostream& s, const Coord3D& c);
 };
 
 // forward declaration
@@ -101,6 +106,8 @@ protected:
 	Dir (int i) : val (i) { }
 
 	template <typename Dim> friend class Side;
+
+	friend std::ostream& operator << (std::ostream& os, const Dir& d);
 };
 
 struct Dim1D {
@@ -128,6 +135,8 @@ protected:
 	Dim2D (int i) : val (i) { }
 
 	friend class Side <Dim2D>;
+
+	friend std::ostream& operator << (std::ostream& os, const Dim2D& d);
 };
 
 /// Type-safe enumeration of axis dimensions in 3D
@@ -193,6 +202,9 @@ protected:
 
 	// fixed enumeration of all sides
 	static const Side ALL [];
+
+	template <typename T>
+	friend std::ostream& operator << (std::ostream& os, const Side<T>& s);
 };
 
 // specializations for the dimensions we work with
@@ -237,8 +249,12 @@ struct Corn3D : public Corn2D {
 									 dim == Dim3D::Z ? dir : m_k);
 	}
 
+	Dir k() const { return m_k; }
+
 protected:
 	const Dir m_k;
+
+	friend std::ostream& operator << (std::ostream& os, const Corn3D& c);
 };
 
 /**

@@ -2,6 +2,7 @@
 // This file is licensed under the GNU General Public License v3.0
 #include <opm/verteq/nav.hpp>
 #include <cstdlib>
+#include <iostream>
 using namespace std;
 
 const Dir Dir::DEC (0);
@@ -39,3 +40,35 @@ const Side <Dim2D> Side <Dim2D>::ALL[] = {
 	Side (Dim2D::Y, Dir::DEC), // J-
 	Side (Dim2D::Y, Dir::INC)  // J+
 };
+
+// print carriers (for debugging)
+ostream& operator << (ostream& os, const Coord2D& c) {
+	return (os << '(' << c.i () << ',' << c.j () << ')'); // e.g. "(3,2)"
+}
+
+ostream& operator << (ostream& os, const Coord3D& c) {
+	// e.g. "(3,2,5)"
+	return (os << '(' << c.i () << ',' << c.j () << ',' << c.k () << ')');
+}
+
+static const char DIR_NAMES[] = {'-', '+'};
+static const char DIM_NAMES[] = {'I', 'J', 'K'};
+
+ostream& operator << (ostream& os, const Dir& d) {
+	return (os << DIR_NAMES[d.val]); // e.g. '-'
+}
+
+ostream& operator << (ostream& os, const Dim2D& d) {
+	return (os << DIM_NAMES[d.val]); // e.g. 'I'
+}
+
+ostream& operator << (ostream& os, const Side2D& s) {
+	return (os << s.dim () << s.dir ()); // e.g. "I-"
+}
+
+ostream& operator << (ostream& os, const Corn3D& c) {
+	// e.g. "(I-,J+)"
+	return (os << '(' << DIM_NAMES[Dim3D::X.val] << c.i () << ','
+										<< DIM_NAMES[Dim3D::Y.val] << c.j () << ','
+										<< DIM_NAMES[Dim3D::Z.val] << c.k () << ')');
+}
