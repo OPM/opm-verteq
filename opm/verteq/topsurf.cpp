@@ -349,6 +349,10 @@ private:
 				// both directions in the same dimension -- then it would have to
 				// belong to two opposite faces, unless the grid is degenerated)
 			}
+			/*
+			cerr << "elem: " << three_d.coord(top_cell_glob_id) << ':' << endl;
+			dump_map (classifier);
+			*/
 
 			// cannot handle degenerate grids without top face properly
 			if (top_face_glob_id == Cart2D::NO_FACE) {
