@@ -341,8 +341,8 @@ private:
 					if (ptr != classifier.end ()) {
 						classifier.erase (ptr);
 					}
-					classifier.insert (ptr, make_pair (node,
-																						 prev.pivot (s.dim (), s.dir ())));
+					const Corn3D upd_corn = prev.pivot (s.dim(), s.dir());
+					classifier.insert (ptr, make_pair (node, upd_corn));
 				}
 
 				// after this loop, we have a map of each node local to the element,
