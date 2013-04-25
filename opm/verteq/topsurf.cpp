@@ -457,6 +457,10 @@ private:
 		//             o <---- o               o <---- o
 		//                 I-             (I-,J+)     (I-,J-)
 
+		// TODO: Possible to instead create an S-shaped traversal with
+		// different directions every odd/even column, so the faces ends
+		// up naturally in clockwise directions around the element?
+
 		// allocate two arrays that will hold the global ids of the two
 		// elements on each side, or NO_ELEM if there is no active element
 		// on that side. if both sides are NO_ELEM then the face can be
