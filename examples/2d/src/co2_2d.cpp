@@ -53,7 +53,7 @@ int main (int argc, char *argv[]) {
 	initStateFromDeck (grid, fluid, parser, gravity [3], state);
 
 	// setup wells from input, using grid and rock properties read earlier
-	WellsManager wells (parser, grid, fluid.permeability());
+	WellsManager wells (parser, fine_grid, fluid.permeability());
 	WellState wellState; wellState.init (wells.c_wells(), state);
 
 	// no sources and no-flow boundary conditions
