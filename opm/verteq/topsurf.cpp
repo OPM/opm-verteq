@@ -3,6 +3,7 @@
 
 #include <opm/verteq/nav.hpp>
 #include <opm/verteq/topsurf.hpp>
+#include <opm/core/grid/cornerpoint_grid.h> // compute_geometry
 #include <opm/core/utility/exc.hpp>
 #include <boost/io/ios_state.hpp> // ios_all_saver
 #include <boost/range/iterator_range.hpp>
@@ -641,6 +642,7 @@ TopSurf::create (const UnstructuredGrid& fine_grid) {
 
 	// outsource the entire construction to a builder object
 	TopSurfBuilder (fine_grid, *(ts.get ()));
+	compute_geometry (ts.get ());
 
 	// client owns pointer to constructed grid from this point
 	return ts.release ();
