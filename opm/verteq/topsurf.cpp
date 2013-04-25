@@ -411,6 +411,18 @@ private:
 			}
 		}
 
+		// dump node topology to console
+		/*
+		for (int cart_node_ndx = 0; cart_node_ndx != num_nodes; ++cart_node_ndx) {
+			const int glob_node_id = nodes[cart_node_ndx];
+			if (glob_node_id != Cart2D::NO_NODE) {
+				cerr << "node " << nodes[cart_node_ndx] << ": ("
+						 << ts.node_coordinates[2*glob_node_id+0] << ','
+						 << ts.node_coordinates[2*glob_node_id+1] << ')' << endl;
+			}
+		}
+		*/
+
 		// TODO: check for degeneracy by comparing each node's coordinates
 		// with those in the opposite direction in both dimensions (separately)
 	}
@@ -525,6 +537,20 @@ private:
 		}
 		// after this loop we have a map of all possible faces, and know
 		// how many of these are active.
+
+		// dump face topology to console
+		/*
+		for (int cart_face_ndx = 0; cart_face_ndx != num_faces; ++cart_face_ndx) {
+			const int face_glob_id = faces[cart_face_ndx];
+			if (face_glob_id != Cart2D::NO_FACE) {
+				cerr << "face " << face_glob_id << ": " << endl;
+				cerr << "\t" << "elements: " << pri_elem[cart_face_ndx] << ","
+																		 << sec_elem[cart_face_ndx] << endl;
+				cerr << "\t" << "nodes: " << src[cart_face_ndx] << ","
+																	<< dst[cart_face_ndx] << endl;
+			}
+		}
+		*/
 
 		// each cell has 4 sides in 2D; we assume no degenerate sides
 		const int QUAD_SIDES = Dim2D::COUNT * Dir::COUNT;
