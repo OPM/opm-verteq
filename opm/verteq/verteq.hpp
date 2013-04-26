@@ -32,6 +32,12 @@ struct ParameterGroup;
  * The objects provided by the upscaling may be passed into the
  * simulator as if read from a deck, and the results translated back
  * into a full model afterwards.
+ *
+ * Notice that the following constraints apply on the grid:
+ *
+ * * It must be structured, i.e. every element is (i,j,k)-addressable
+ * * No degenerate faces (on the top), i.e. no crossing grid axes
+ * * It must have no horizontal faults
  */
 class OPM_VERTEQ_PUBLIC VertEq
 {
