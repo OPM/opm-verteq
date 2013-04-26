@@ -39,4 +39,18 @@ Note: «opm-root» is placeholder for a common suite directory.
 14. Dependencies (sibling to Build & Run)
 15. [X] opm-verteq
 
-16. Build | Build All
+If you want to use another compiler, you can set it like this:
+
+16. Build & Run
+    Build
+	Build Environment
+	Add
+	Variable: CC      Value: gcc-4.8
+	Variable: CXX     Value: g++-4.8
+17. rm «opm-root»/bld/opm-verteq/CMakeCache.txt
+18. CMake
+    Reconfigure project: Run cmake
+
+This procedure must be repeated in *both* projects.
+
+19. Build | Build All
