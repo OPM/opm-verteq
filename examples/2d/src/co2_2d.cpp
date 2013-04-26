@@ -13,12 +13,16 @@
 #include <opm/core/linalg/LinearSolverFactory.hpp>
 #include <opm/core/simulator/SimulatorIncompTwophase.hpp>
 #include <opm/core/simulator/SimulatorReport.hpp>
+#include <opm/verteq/verteq.hpp>
+
+#include <boost/scoped_ptr.hpp>
 
 #include <iostream>
 #include <vector>
 
 using namespace Opm;
 using namespace Opm::parameter;
+using namespace boost;
 using namespace std;
 
 int main (int argc, char *argv[]) {
@@ -30,10 +34,15 @@ int main (int argc, char *argv[]) {
 	const string filename = param.get <string> ("filename");
 	cout << "Reading deck: " << filename << endl;
 	const EclipseGridParser parser (filename);
+	const string title = parser.getTITLE ().name ();
 
 	// extract grid from the parse tree
 	const GridManager gridMan (parser);
-	const UnstructuredGrid& grid = *gridMan.c_grid ();
+	const UnstructuredGrid& fine_grid = *gridMan.c_grid ();
+
+	// upscale to a top surface
+	scoped_ptr <VertEq> ve (VertEq::create (title, param, fine_grid));
+	const UnstructuredGrid& grid = ve->grid ();
 
 	// extract fluid, rock and two-phase properties from the parse tree
 	IncompPropertiesFromDeck fluid (parser, grid);
@@ -44,7 +53,7 @@ int main (int argc, char *argv[]) {
 	initStateFromDeck (grid, fluid, parser, gravity [3], state);
 
 	// setup wells from input, using grid and rock properties read earlier
-	WellsManager wells (parser, grid, fluid.permeability());
+	WellsManager wells (parser, fine_grid, fluid.permeability());
 	WellState wellState; wellState.init (wells.c_wells(), state);
 
 	// no sources and no-flow boundary conditions

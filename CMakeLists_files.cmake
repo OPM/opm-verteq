@@ -27,6 +27,8 @@
 # find opm -name '*.c*' -printf '\t%p\n' | sort
 list (APPEND MAIN_SOURCE_FILES
 	opm/core/utility/exc.cpp
+        opm/verteq/nav.cpp
+	opm/verteq/topsurf.cpp
 	opm/verteq/verteq.cpp
 	)
 
@@ -50,5 +52,6 @@ list (APPEND EXAMPLE_SOURCE_FILES
 list (APPEND PUBLIC_HEADER_FILES
 	opm/core/utility/exc.hpp
 	opm/core/utility/visibility.h
+	opm/verteq/topsurf.hpp
 	opm/verteq/verteq.hpp
 	)
