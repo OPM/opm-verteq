@@ -1,8 +1,7 @@
 RUNSPEC
 
 TITLE
-	'Example of how to do CO2 sequestration modelling using opm-core.'
-/
+Example of how to do CO2 sequestration modelling using opm-core.
 
 DIMENS
 	3	1	2
@@ -34,8 +33,8 @@ PROPS
 
 -- brine is 990 kg/m3, 0.35cP, co2 is 650 kg/m3, 0.06cP, at 100 bars (40C)
 DENSITY
---	brine	co2
-	990		650
+--	co2   brine
+	650   990
 /
 
 PVTW
