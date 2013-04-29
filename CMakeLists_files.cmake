@@ -54,4 +54,5 @@ list (APPEND PUBLIC_HEADER_FILES
 	opm/verteq/utility/visibility.h
 	opm/verteq/topsurf.hpp
 	opm/verteq/verteq.hpp
+	opm/verteq/visibility.hpp
 	)
