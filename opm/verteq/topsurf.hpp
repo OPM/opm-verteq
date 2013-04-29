@@ -65,6 +65,21 @@ struct TopSurf : public UnstructuredGrid {
 	int* col_cellpos;
 
 	/**
+	 * Mapping from underlaying fine grid into top surface grid.
+	 *
+	 * For each element e in the fine grid, cell_col[e] is the index of the
+	 * column/cell in the top surface. The number of cells in the fine grid
+	 * can be found in col_cellpos[number_of_cells+1].
+	 *
+	 * Note: The indices in this array is NOT cell indices of this grid,
+	 * but rather of the underlaying grid. Instead, it are the values that
+	 * are stored in this array which are element identities.
+	 *
+	 * @see TopSurf::col_cellpos, TopSurf::col_cells
+	 */
+	int* fine_col;
+
+	/**
 	 * Create an upscaled grid based on a full, three-dimensional grid.
 	 *
 	 * @param fine Grid that should be upscaled.

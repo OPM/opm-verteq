@@ -201,6 +201,7 @@ private:
 		// now write indices from the fine grid into the column map of the surface
 		// we end up with a list of element that are in each column
 		ts.col_cells = new int [fine_grid.number_of_cells];
+		ts.fine_col = new int [fine_grid.number_of_cells];
 		for (int cell = 0; cell < fine_grid.number_of_cells; ++cell) {
 			// get the Cartesian index for this element
 			const Cart3D::elem_t cart_ndx = fine_grid.global_cell[cell];
@@ -222,6 +223,10 @@ private:
 			// have calculated the position based on depth, the list will be
 			// sorted downwards up when we are done
 			ts.col_cells[segment + offset] = cell;
+
+			// reverse mapping; allows us to quickly figure out the corresponding
+			// column of a location (for instance for a well)
+			ts.fine_col[cell] = elem_id;
 		}
 
 		// these members will be filled by computeGeometry, but needs valid
@@ -617,7 +622,8 @@ TopSurf::create (const UnstructuredGrid& fine_grid) {
 
 TopSurf::TopSurf ()
 	: col_cells (0)
-	, col_cellpos (0) {
+	, col_cellpos (0)
+	, fine_col (0) {
 	// zero initialize all members that come from UnstructuredGrid
 	// since that struct is a C struct, it doesn't have a ctor
 	dimensions = 0;
@@ -661,4 +667,5 @@ TopSurf::~TopSurf () {
 	// these are the extra members that are TopSurf specific
 	delete [] col_cells;
 	delete [] col_cellpos;
+	delete [] fine_col;
 }
