@@ -565,6 +565,11 @@ private:
 				ts.face_nodes[start_pos + 0] = src[cart_face];
 				ts.face_nodes[start_pos + 1] = dst[cart_face];
 
+				// TODO: If a vertical fault displaces two column so that there
+				// is no longer connection between them, they will be reconnected
+				// here. This condition can be detected by comparing the top and
+				// bottom surface.
+
 				// neighbours should already be stored in the right orientation
 				ts.face_cells[face_glob_id + 0] = pri_elem[cart_face];
 				ts.face_cells[face_glob_id + 1] = sec_elem[cart_face];
