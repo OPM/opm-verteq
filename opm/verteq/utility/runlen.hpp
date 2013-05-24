@@ -4,6 +4,9 @@
 // Copyright (C) 2013 Uni Research AS
 // This file is licensed under the GNU General Public License v3.0
 
+// forward declaration
+struct UnstructuredGrid;
+
 namespace Opm {
 
 /**
@@ -93,6 +96,18 @@ public:
     }
 
     /**
+     * Create another view of the same data.
+     *
+     * @param rhs View to a run-length-encoded matrix
+     */
+    RunLenView (const RunLenView& rhs)
+        // copy all fields verbatim
+        : num_of_cols (rhs.num_of_cols)
+        , pos (rhs.pos)
+        , data (rhs.data) {
+    }
+
+    /**
      * Access a column directly.
      *
      * @param col Index of the column to get
@@ -170,6 +185,14 @@ struct RunLenData : public RunLenView <T> {
         delete [] RunLenView <T>::data;
     }
 };
+
+// shorthands for most used types
+typedef RunLenView <int> rlw_int;
+typedef RunLenView <double> rlw_double;
+
+// access common run-length encoded matrices in a grid structure
+rlw_int grid_cell_facetag (const UnstructuredGrid& g);
+rlw_int grid_cell_faces (const UnstructuredGrid& g);
 
 } /* namespace Opm */
 
