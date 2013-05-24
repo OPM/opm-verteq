@@ -211,6 +211,12 @@ protected:
 typedef Side <Dim2D> Side2D;
 typedef Side <Dim3D> Side3D;
 
+// standalone constants for sides that we use; we call them 'up' and
+// 'down' so that U and D are mnemonics, in contrast to 'top' and 'bottom'
+// where the 'b' would conflict with 'back'.
+extern const Side3D UP;
+extern const Side3D DOWN;
+
 /**
  * Value type that addresses corners in a two-dimensional grid cell.
  * A corner is identified by directions in both dimensions.
