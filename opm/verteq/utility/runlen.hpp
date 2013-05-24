@@ -113,7 +113,7 @@ public:
      * @param col Index of the column to get
      * @return Pointer to the start of the column
      */
-    T* operator [] (int col) {
+    T* operator [] (int col) const {
         return &data [pos [col]];
     }
 
@@ -122,7 +122,7 @@ public:
      *
      * @return Number of columns.
      */
-    int cols () {
+    int cols () const {
         return num_of_cols;
     }
 
@@ -132,7 +132,7 @@ public:
      * @param col Index of the column.
      * @return Number of elements.
      */
-    int size (int col) {
+    int size (int col) const {
         return pos [col + 1] - pos [col];
     }
 
@@ -146,7 +146,7 @@ public:
      * @return Value of the last element. If there is no elements in
      *         this column, then the return value is undefined.
      */
-    T& last (int col) {
+    T& last (int col) const {
         return data [pos [col + 1] - 1];
     }
 };
@@ -187,8 +187,8 @@ struct RunLenData : public RunLenView <T> {
 };
 
 // shorthands for most used types
-typedef RunLenView <int> rlw_int;
-typedef RunLenView <double> rlw_double;
+typedef const RunLenView <int> rlw_int;
+typedef const RunLenView <double> rlw_double;
 
 // access common run-length encoded matrices in a grid structure
 rlw_int grid_cell_facetag (const UnstructuredGrid& g);
