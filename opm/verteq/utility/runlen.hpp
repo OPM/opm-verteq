@@ -32,6 +32,25 @@ namespace Opm {
  * int first_local_face = faces_in_cell [cellno] [0];
  * @endcode
  *
+ * Notice if you want to loop through every item and know where you are
+ * (because you intend to use this as an index in another matrix), you
+ * can do:
+ *
+ * @example
+ * @code{.cpp}
+ * RunLenView <int> cell_faces (
+ *     g.number_of_cells,
+ *     g.cell_facepos,
+ *     g.cell_faces
+ * );
+ *
+ * for (int cell = 0; cell < cell_faces.cols(); ++cell) {
+ *   for (int local_face = 0; local_face < cell_faces.size (cell); ++local_face) {
+ *     int face_id = cell_faces[cell][local_face];
+ *   }
+ * }
+ * @endcode
+ *
  * @see Opm::RunLenData
  */
 template <typename T>
@@ -81,6 +100,15 @@ public:
      */
     T* operator [] (int col) {
         return &data [pos [col]];
+    }
+
+    /**
+     * Number of columns that are stored in the entire matrix.
+     *
+     * @return Number of columns.
+     */
+    int cols () {
+        return num_of_cols;
     }
 
     /**
