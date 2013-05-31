@@ -83,36 +83,6 @@ struct TopSurf : public UnstructuredGrid {
 	 */
 	static TopSurf* create (const UnstructuredGrid& fine);
 
-	/**
-	 * Iterator for column members
-	 *
-	 * Defines a input iterator that let one walk through all the cells in
-	 * the fine grid, which belongs to a particular column, i.e. cell in the
-	 * coarse grid.
-	 *
-	 * Each item pointed to by this iterator is an index into the full grid.
-	 * The iterator is only valid for one column.
-	 *
-	 * @param ndx2d Index into the two-dimensional grid.
-	 *
-	 * Each of the elements in the two-dimensional grid identifies a column
-	 * in the original, full grid.
-	 *
-	 * @return Iterator through three-dimensional elements in the column.
-	 *
-	 * The iterator supports the idiomatic methods begin() and end() which
-	 * can be used to get to the starting and ending point of the iteration,
-	 * respectively.
-	 *
-	 * @example
-	 * @code{.cpp}
-	 * BOOST_FOREACH (int ndx_3d, topSurf->column (ndx_2d)) {
-	 *   sum += poro [ndx_3d];
-	 * }
-	 * @endcode
-	 */
-	boost::iterator_range <const int*> column (int ndx_2d);
-
 private:
 	/**
 	 * @brief You are not meant to construct these yourself; use create ().

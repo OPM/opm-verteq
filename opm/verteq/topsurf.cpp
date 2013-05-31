@@ -6,7 +6,6 @@
 #include <opm/verteq/utility/exc.hpp>
 #include <opm/core/grid/cornerpoint_grid.h> // compute_geometry
 #include <boost/io/ios_state.hpp> // ios_all_saver
-#include <boost/range/iterator_range.hpp>
 #include <algorithm> // min, max
 #include <climits> // INT_MIN, INT_MAX
 #include <cstdlib> // div
@@ -17,38 +16,6 @@
 using namespace boost;
 using namespace Opm;
 using namespace std;
-
-/**
- * Generic run-length iterator.
- *
- * @param ndx Index of the range to find, e.g. a column.
- *
- * @param pos Array containing accumulated counts for each range,
- * e.g. col_collpos.
- *
- * @param values Array containing the values for every range,
- * concatenated into one huge array, e.g. col_cells.
- *
- * @return Iterator that can be used to iterate through all values
- * only in the specified range, e.g. cells in a column.
- */
-template <typename T> iterator_range <const T*>
-run_len_iter (const int ndx, const int* const& pos, const T* const& values) {
-	// skip all the values that belongs to ranges before us,
-	// then we get to the start of our own range
-	const T* begin_addr = &values [pos [ndx]];
-
-	// stop when we arrive at the start of the next range
-	const T* end_addr = &values [pos [ndx + 1]];
-
-	// return an iterator over this
-	return iterator_range <const T *> (begin_addr, end_addr);
-}
-
-iterator_range <const int*>
-TopSurf::column (int ndx_2d) {
-	return run_len_iter <const int> (ndx_2d, this->col_cellpos, this->col_cells);
-}
 
 /// Helper routine to print of map
 template <typename T, typename U>
