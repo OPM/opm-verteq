@@ -3,8 +3,8 @@
 
 #include <opm/verteq/nav.hpp>
 #include <opm/verteq/topsurf.hpp>
+#include <opm/verteq/utility/exc.hpp>
 #include <opm/core/grid/cornerpoint_grid.h> // compute_geometry
-#include <opm/core/utility/exc.hpp>
 #include <boost/io/ios_state.hpp> // ios_all_saver
 #include <boost/range/iterator_range.hpp>
 #include <algorithm> // min, max

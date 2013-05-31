@@ -2,8 +2,8 @@
  * Copyright (C) 2013 Uni Research AS.
  * This code is licensed under The GNU General Public License v3.0 or later.
  */
-#include <opm/core/utility/visibility.h>
-#include <opm/core/utility/exc.hpp>
+#include <opm/verteq/utility/visibility.h>
+#include <opm/verteq/utility/exc.hpp>
 
 #include <boost/exception/error_info.hpp>
 #include <boost/exception/get_error_info.hpp>

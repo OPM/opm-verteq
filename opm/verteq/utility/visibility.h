@@ -1,5 +1,5 @@
-#ifndef OPM_CORE_VISIBILITY_INCLUDED
-#define OPM_CORE_VISIBILITY_INCLUDED
+#ifndef OPM_VERTEQ_VISIBILITY_INCLUDED
+#define OPM_VERTEQ_VISIBILITY_INCLUDED
 
 /**
  * Macros to encapsulate symbol visibility on various platforms.
@@ -9,7 +9,7 @@
  *
  * Usage:
  *
- * #include <opm/core/utility/visibility.h>
+ * #include <opm/verteq/utility/visibility.h>
  *
  * #if defined (foo_EXPORTS)
  * #  define FOO_PUBLIC SYMBOL_IS_EXPORTED
@@ -39,4 +39,4 @@
 #  endif
 #endif
 
-#endif /* OPM_CORE_VISIBILITY_INCLUDED */
+#endif /* OPM_VERTEQ_VISIBILITY_INCLUDED */
