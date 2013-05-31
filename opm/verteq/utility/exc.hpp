@@ -10,8 +10,8 @@
 #include <boost/exception/info.hpp> // boost::throw_{function,file,line}
 #endif
 
-#ifndef OPM_CORE_VISIBILITY_INCLUDED
-#include <opm/core/utility/visibility.h>
+#ifndef OPM_VERTEQ_VISIBILITY_INCLUDED
+#include <opm/verteq/utility/visibility.h>
 #endif
 #if defined (opmverteq_EXPORTS)
 #  define OPM_VERTEQ_PUBLIC SYMBOL_IS_EXPORTED
