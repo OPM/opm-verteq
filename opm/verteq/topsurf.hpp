@@ -107,6 +107,18 @@ struct TopSurf : public UnstructuredGrid {
 	double* dz;
 
 	/**
+	 * Reference height for each column.
+	 *
+	 * This is a flat array with number_of_elements items.
+	 *
+	 * The reference height of a column is defined as the z-coordinate of
+	 * the centroid of the top face of the upper block in the column. From
+	 * these values and (a subset of) the values in face_centroids it is
+	 * possible to recreate the 2.5D surface of the top.
+	 */
+	double* z0;
+
+	/**
 	 * Create an upscaled grid based on a full, three-dimensional grid.
 	 *
 	 * @param fine Grid that should be upscaled.
