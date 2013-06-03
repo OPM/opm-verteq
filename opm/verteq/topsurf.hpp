@@ -119,6 +119,20 @@ struct TopSurf : public UnstructuredGrid {
 	double* z0;
 
 	/**
+	 * Accumulated height of all blocks in each column.
+	 *
+	 * This is a flat array with number_of_elements items.
+	 *
+	 * Sum of all the heights of the blocks in each column. Since a gap between
+	 * blocks is a violation of the vertical equilibrium assumption, this value
+	 * should be the z-coordinate of the bottom face of the last block, up to
+	 * numerical rounding errors.
+	 *
+	 * @see TopSurf::dz, TopSurf::z0
+	 */
+	double* h_tot;
+
+	/**
 	 * Create an upscaled grid based on a full, three-dimensional grid.
 	 *
 	 * @param fine Grid that should be upscaled.
