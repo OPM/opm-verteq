@@ -93,6 +93,9 @@ struct TopSurfBuilder {
 
 		// identify active faces in the grid
 		create_faces ();
+
+		// cache fine block and column metrics
+		create_heights ();
 	}
 
 	// various stages of the build process, supposed to be called in
@@ -677,6 +680,38 @@ private:
 		const double height = down_z - up_z;
 		return height;
 	}
+
+	void create_heights () {
+		// allocate memory to hold the heights
+		ts.dz = new double [fine_grid.number_of_cells];
+		ts.z0 = new double [ts.number_of_cells];
+		ts.h_tot = new double [ts.number_of_cells];
+
+		// view that lets us treat it as a matrix
+		const rlw_int blk_id (ts.number_of_cells, ts.col_cellpos, ts.col_cells);
+		const rlw_double dz (ts.number_of_cells, ts.col_cellpos, ts.dz);
+
+		// find all measures per column
+		for (int col = 0; col < blk_id.cols (); ++col) {
+			// reference height for this column (if there is any elements)
+			if (blk_id.size (col)) {
+				const int top_ndx = blk_id[col][0];
+				ts.z0[col] = find_zcoord (top_ndx, UP);
+			}
+
+			// reset height for each column
+			double accum = 0.;
+
+			// height of each element in the column element
+			double* const dz_col = dz[col];
+			for (int col_elem = 0; col_elem < blk_id.size (col); ++col_elem) {
+				accum += dz_col[col_elem] = find_height (blk_id[col][col_elem]);
+			}
+
+			// store total accumulated height at the end for each column
+			ts.h_tot[col] = accum;
+		}
+	}
 };
 
 TopSurf*
@@ -700,7 +735,10 @@ TopSurf::create (const UnstructuredGrid& fine_grid) {
 TopSurf::TopSurf ()
 	: col_cells (0)
 	, col_cellpos (0)
-	, fine_col (0) {
+	, fine_col (0)
+	, dz (0)
+	, z0 (0)
+	, h_tot (0) {
 	// zero initialize all members that come from UnstructuredGrid
 	// since that struct is a C struct, it doesn't have a ctor
 	dimensions = 0;
@@ -745,4 +783,7 @@ TopSurf::~TopSurf () {
 	delete [] col_cells;
 	delete [] col_cellpos;
 	delete [] fine_col;
+	delete [] dz;
+	delete [] z0;
+	delete [] h_tot;
 }
