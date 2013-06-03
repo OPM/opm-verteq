@@ -4,6 +4,7 @@
 #include <opm/verteq/nav.hpp>
 #include <opm/verteq/topsurf.hpp>
 #include <opm/verteq/utility/exc.hpp>
+#include <opm/verteq/utility/runlen.hpp> // rlw_int
 #include <opm/core/grid/cornerpoint_grid.h> // compute_geometry
 #include <boost/io/ios_state.hpp> // ios_all_saver
 #include <algorithm> // min, max
@@ -604,6 +605,43 @@ private:
 			}
 		}
 		ts.cell_facepos[ts.number_of_cells] = QUAD_SIDES * ts.number_of_cells;
+	}
+
+	/**
+	 * Specific face number of a given side of an element.
+	 *
+	 * @param glob_elem_id Element index in the fine grid.
+	 * @param s Side to locate
+	 * @return Index of the face of the element which is this side
+	 *
+	 * @see Opm::UP, Opm::DOWN
+	 */
+	int find_face (int glob_elem_id, const Side3D& s) {
+		// this is the tag we are looking for
+		const int target_tag = s.facetag ();
+
+		// this is the matrix we are looking in
+		const rlw_int cell_facetag = grid_cell_facetag (fine_grid);
+
+		// we are returning values from this matrix
+		const rlw_int cell_faces = grid_cell_faces (fine_grid);
+
+		// loop through all faces for this element; face_ndx is the local
+		// index amongst faces for just this one element.
+		for (int local_face = 0;
+		     local_face < cell_facetag.size (glob_elem_id);
+		     ++local_face) {
+
+			// if we found a match, then return this; don't look any more
+			if (cell_facetag[glob_elem_id][local_face] == target_tag) {
+
+				// return the (global) index of the face, not the tag!
+				return cell_faces[glob_elem_id][local_face];
+			}
+		}
+
+		// in a structured grid we expect to find every face
+		throw OPM_EXC ("Element %d does not have face #%d", glob_elem_id, target_tag);
 	}
 };
 
