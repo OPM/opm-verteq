@@ -661,6 +661,22 @@ private:
 		const double z = fine_grid.face_centroids[z_ndx];
 		return z;
 	}
+
+	/**
+	 * Height of a particular element.
+	 *
+	 * @param glob_elem_id Element index in the fine grid.
+	 * @return Difference between center of top and bottom face.
+	 */
+	double find_height (int glob_elem_id) {
+		// get the z-coordinate for each the top and bottom face for this element
+		const double up_z = find_zcoord (glob_elem_id, UP);
+		const double down_z = find_zcoord (glob_elem_id, DOWN);
+
+		// the side that is down should have the z coordinate with highest magnitude
+		const double height = down_z - up_z;
+		return height;
+	}
 };
 
 TopSurf*
