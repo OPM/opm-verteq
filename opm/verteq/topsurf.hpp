@@ -46,6 +46,17 @@ struct TopSurf : public UnstructuredGrid {
 	 * Use this field together with the col_cellpos to iterate through a column
 	 * in the fine grid.
 	 *
+	 * @example
+	 * @code{.cpp}
+	 * TopSurf* ts = ...;
+	 * rlw_int col_cells (ts->number_of_cells, ts->col_cellpos, ts->col_cells);
+	 * for (int col = 0; col < col_cells.cols(); ++col) {
+	 *   for (int block = 0; block < col_cells.size (col); ++block) {
+	 *      ... col_cells[col][block] ...
+	 *   }
+	 * }
+	 * @endcode
+	 *
 	 * @see TopSurf::column, TopSurf::col_cellpos
 	 */
 	int* col_cells;
