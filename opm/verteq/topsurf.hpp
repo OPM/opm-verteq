@@ -91,6 +91,22 @@ struct TopSurf : public UnstructuredGrid {
 	int* fine_col;
 
 	/**
+	 * Height in each fine grid block, setup in columns.
+	 *
+	 * For each column, there is a consecutive list of height for each fine
+	 * grid block in that column. This array has the same format as the
+	 * col_cells run-length matrix, and the heights given here correspond to
+	 * the indices in that matrix.
+	 *
+	 * The height of a block is defined as the z-coordinate difference
+	 * between the centroid of the top face and the centroid of the bottom
+	 * face.
+	 *
+	 * @see TopSurf::col_cells
+	 */
+	double* dz;
+
+	/**
 	 * Create an upscaled grid based on a full, three-dimensional grid.
 	 *
 	 * @param fine Grid that should be upscaled.
