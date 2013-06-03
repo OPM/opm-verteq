@@ -643,6 +643,24 @@ private:
 		// in a structured grid we expect to find every face
 		throw OPM_EXC ("Element %d does not have face #%d", glob_elem_id, target_tag);
 	}
+
+	/**
+	 * Get absolute elevation (z-coordinate) of a face. This uses the
+	 * elevation at the centroid as representative of the entire face.
+	 *
+	 * @param glob_elem_id Element index in the fine grid.
+	 * @param s Side to locate.
+	 * @return Elevation for the midpoint of this face.
+	 */
+	double find_zcoord (int glob_elem_id, const Side3D& s) {
+		// find the desired face for this element
+		const int face_ndx = find_face (glob_elem_id, s);
+
+		// get the z-coordinate for it
+		const int z_ndx = face_ndx * Dim3D::COUNT + Dim3D::Z.val;
+		const double z = fine_grid.face_centroids[z_ndx];
+		return z;
+	}
 };
 
 TopSurf*
