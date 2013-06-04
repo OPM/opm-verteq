@@ -9,5 +9,15 @@
 \usepackage{varioref}
 \usepackage{xspace}
 
+% --- macros ---
+% enable use of equations both inline and in equations
+\newcommand{\mth}[1]{\ensuremath{#1}\xspace}
+\newcommand{\COO}{\mth{\mathrm{CO}_2}}
+
+% --- notation ---
+\newcommand{\der}[2]{\frac{\partial{#1}}{\partial{#2}}}       % derivative
+\newcommand{\dvg}[1]{\nabla\cdot{#1}}                         % divergence
+\newcommand{\intg}[4]{\int_{#1}^{#2}\!{#3}\,\mathrm{d}{#4}}   % integral
+
 \begin{document}
 \end{document}
