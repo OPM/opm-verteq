@@ -83,4 +83,16 @@ We assume that we have two phases, \COO and brine:
 \begin{equation}
 \LevB \leq \LevR \leq \LevM \leq \LevT
 \end{equation}
+
+
+For each of these phases, we will evolve a conservation equation for immiscible flow:
+\begin{gather}
+\eqlabel{verteq:conserv-eq}
+\der{ \left( \Hei \Por \Satp \right) }{ \tim } + \dvg{ \Velp } = 0 \\
+\intertext{and the algebraic condition for incompressibility:}
+\eqlabel{verteq:incompressible}
+\dvg{ \sum_{\phs} { \Velp } } = 0
+\intertext{where}
+\Hei \Por \Satp = \intg{ \LevT }{ \LevB }{ \por \satp }{ \dph }
+\end{gather}
 \end{document}
