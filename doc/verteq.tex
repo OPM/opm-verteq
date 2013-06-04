@@ -55,4 +55,32 @@
 \newcommand{\hwet}{\hei_\wet}
 
 \begin{document}
+We assume that we have two phases, \COO and brine:
+\begin{equation}
+\phs = \left\{ \nap, \wet \right\}
+\end{equation}
+
+\begin{tabular}{lll}
+\( \Hei  \) & = Total height of reservoir & = \( \Hei \left( \x, \y \right)        \) \\
+\( \hnap \) & = Height of \COO plume      & = \( \hnap \left( \x, \y, \tim \right) \) \\
+\( \hres \) & = Height of residual region & = \( \hres \left( \x, \y, \tim \right) \) \\
+\( \hwet \) & = Height of brine region    & = \( \hwet \left( \x, \y, \tim \right) \) \\
+\end{tabular}
+
+\begin{equation}
+\hnap + \hres + \hwet = \Hei, \qquad \qquad \hphs \geq 0
+\end{equation}
+
+\begin{quote}
+\begin{description}
+\item[\( \LevT \)] \(=\) Level of top of the reservoir
+\item[\( \LevB \)] \(=\) Level of the bottom of the reservoir
+\item[\( \LevM \)] \(=\) Level of intersection between \COO and residual region
+\item[\( \LevR \)] \(=\) Level of intersection between residual region and brine
+\end{description}
+\end{quote}
+
+\begin{equation}
+\LevB \leq \LevR \leq \LevM \leq \LevT
+\end{equation}
 \end{document}
