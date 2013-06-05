@@ -175,6 +175,9 @@ private:
 		ts.global_cell = new int [ts.number_of_cells];
 		ts.col_cellpos = new int [ts.number_of_cells+1];
 
+		// we haven't filled any columns yet, so this is a sensible init value
+		ts.max_vert_res = 0;
+
 		// there is no elements before the first column, so this number is
 		// always zero. it is written to the array to maintain a straight code
 		// path in calculations.
@@ -198,6 +201,11 @@ private:
 				// note the number of elements there now are before the next column;
 				// in addition to all the previous ones, our elements are now added
 				ts.col_cellpos[elem_id+1] = ts.col_cellpos[elem_id] + act_cnt[col];
+
+				// update the largest number of these seen so far
+				ts.max_vert_res = max (ts.max_vert_res, act_cnt[col]);
+
+				// only increment this if we found an active column, elem_id <= col
 				elem_id++;
 			}
 		}

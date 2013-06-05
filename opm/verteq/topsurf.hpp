@@ -76,6 +76,16 @@ struct TopSurf : public UnstructuredGrid {
 	int* col_cellpos;
 
 	/**
+	 * Maximum vertical resolution, in blocks.
+	 *
+	 * This holds the largest number of blocks there is in any column in the
+	 * fine grid, i.e. max_vert_res >= col_cellpos[i+1] - col_cellpos[i], for
+	 * any i in [0,number_of_cells-1]. Use this measure to allocate sufficient
+	 * space for temporary storage that holds column data.
+	 */
+	int max_vert_res;
+
+	/**
 	 * Mapping from underlaying fine grid into top surface grid.
 	 *
 	 * For each element e in the fine grid, cell_col[e] is the index of the
