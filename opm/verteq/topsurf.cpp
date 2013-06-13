@@ -692,12 +692,14 @@ private:
 	void create_heights () {
 		// allocate memory to hold the heights
 		ts.dz = new double [fine_grid.number_of_cells];
+		ts.h = new double [fine_grid.number_of_cells];
 		ts.z0 = new double [ts.number_of_cells];
 		ts.h_tot = new double [ts.number_of_cells];
 
 		// view that lets us treat it as a matrix
 		const rlw_int blk_id (ts.number_of_cells, ts.col_cellpos, ts.col_cells);
 		const rlw_double dz (ts.number_of_cells, ts.col_cellpos, ts.dz);
+		const rlw_double h (ts.number_of_cells, ts.col_cellpos, ts.h);
 
 		// find all measures per column
 		for (int col = 0; col < blk_id.cols (); ++col) {
@@ -712,7 +714,9 @@ private:
 
 			// height of each element in the column element
 			double* const dz_col = dz[col];
+			double* const h_col = h[col];
 			for (int col_elem = 0; col_elem < blk_id.size (col); ++col_elem) {
+				h_col[col_elem] = accum;
 				accum += dz_col[col_elem] = find_height (blk_id[col][col_elem]);
 			}
 
@@ -792,6 +796,7 @@ TopSurf::~TopSurf () {
 	delete [] col_cellpos;
 	delete [] fine_col;
 	delete [] dz;
+	delete [] h;
 	delete [] z0;
 	delete [] h_tot;
 }
