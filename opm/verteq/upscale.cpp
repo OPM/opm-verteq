@@ -74,3 +74,25 @@ VertEqUpscaler::bottom (
 	// simply initialize to skip *all* blocks in that column
 	return Elevation (num_rows (col), 0.);
 }
+
+double
+VertEqUpscaler::eval (
+		int col,
+		const double* dpt,
+    const Elevation zeta) const {
+
+	// number of whole blocks to include
+	const int row = zeta.block ();
+
+	// if any blocks before, take those values. unfortunately the implied
+	// zero value in front of the array cause a branch; hopefully branch
+	// prediction in the CPU will be able to alliviate some of that cost.
+	// if we add an explicit zero, then the memory sizes to store the values
+	// are not the same as in the top grid, and we'll have to adjust indices
+	// all the time.
+	const double before = row == 0 ? 0. : dpt[row-1];
+
+	// then we add the fractional value of just this block. it is just the
+	// last block that we want the fraction for
+	return before + (dpt[row] - before) * zeta.fraction ();
+}

@@ -129,6 +129,25 @@ struct VertEqUpscaler {
 	 */
 	Elevation bottom (int col) const;
 
+	/**
+	 * Perform table lookup in an array of depth-averaged values.
+	 *
+	 * Given a height in the form of a discretized elevation, quickly find
+	 * the depth-averaged value at this point.
+	 *
+	 * @param col Column that the elevation is specified for.
+	 *
+	 * @param dpt Depth fractions weighted with a certain property. This
+	 *            should be calculated with wgt_dpt().
+	 *
+	 * @param zeta The elevation to find. Use the interp() routine to get
+	 *             an elevation for an upscaled saturation.
+	 *
+	 * @return Depth-weighted value of the property from the top down to
+	 *         the specified height.
+	 */
+	double eval (int col, const double* dpt, const Elevation zeta) const;
+
 protected:
 	const TopSurf& ts;
 };
