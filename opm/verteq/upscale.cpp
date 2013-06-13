@@ -57,13 +57,20 @@ VertEqUpscaler::wgt_dpt (
 	}
 }
 
+int
+VertEqUpscaler::num_rows (
+    int col) const {
+
+	// use this helper object to query about the size of the column
+	// (the compiler should be able to optimize most of it away)
+	const rlw_int pos (ts.number_of_cells, ts.col_cellpos, ts.col_cells);
+	return pos.size (col);
+}
+
 Elevation
 VertEqUpscaler::bottom (
     int col) const {
 
-	// use this helper object to query about the size of the column
-	const rlw_int pos (ts.number_of_cells, ts.col_cellpos, ts.col_cells);
-
 	// simply initialize to skip *all* blocks in that column
-	return Elevation (pos.size (col), 0.);
+	return Elevation (num_rows (col), 0.);
 }

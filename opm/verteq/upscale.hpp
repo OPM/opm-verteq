@@ -117,6 +117,13 @@ struct VertEqUpscaler {
 	void wgt_dpt (int col, const double* val, double* res) const;
 
 	/**
+	 * Number of rows in a specified column. Use this method to get the
+	 * expected length of arrays containing properties for it. (However, use
+	 * ts.max_vert_res to preallocate space!)
+	 */
+	int num_rows (int col) const;
+
+	/**
 	 * Get the elevation of the bottom of a column. This is usable when we
 	 * want to get the depth-average for the entire column.
 	 */
