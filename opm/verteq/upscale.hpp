@@ -30,6 +30,31 @@ struct VertEqUpscaler {
 	  : ts (topSurf) {
 	}
 
+	/**
+	 * Retrieve a property from the fine grid for a certain column of blocks.
+	 *
+	 * The property is stored in records of 'stride' length, 'offset' elements
+	 * from the start. (This is used to index into a permeability tensor).
+	 *
+	 * @param col Index of the column to retrieve. This must be a valid cell
+	 *            number in the top surface.
+	 *
+	 * @param buf Array that will receive the data. It is assumed that this
+	 *            is preallocated, and is large enough to hold the data for
+	 *            this column.
+	 *
+	 * @param data Array that contains the property for the *entire* fine grid.
+	 *             This is typically something that was retrieved from a fluid
+	 *             object associated with the fine grid.
+	 *
+	 * @param stride Number of values (not bytes!) between each entry for the
+	 *               property. Use one for simple arrays.
+	 *
+	 * @param offset Number of values (not bytes!) before the first entry for
+	 *               this property. Use zero for simple arrays.
+	 */
+	void gather (int col, double* buf, const double* data, int stride, int offset) const;
+
 protected:
 	const TopSurf& ts;
 };
