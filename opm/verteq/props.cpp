@@ -1,4 +1,5 @@
 #include <opm/verteq/props.hpp>
+#include <opm/verteq/topsurf.hpp>
 #include <opm/verteq/utility/exc.hpp>
 #include <memory> // auto_ptr
 using namespace Opm;
@@ -8,8 +9,13 @@ struct VertEqPropsImpl : public VertEqProps {
 	/// Get the underlaying fluid information from here
 	const IncompPropertiesInterface& fp;
 
-	VertEqPropsImpl (const IncompPropertiesInterface& fineProps)
-		: fp (fineProps) {
+	/// Get the grid information from here
+	const TopSurf& ts;
+
+	VertEqPropsImpl (const IncompPropertiesInterface& fineProps,
+	                 const TopSurf& topSurf)
+		: fp (fineProps)
+		, ts (topSurf) {
 	}
 
 	/* rock properties; use volume-weighted averages */
@@ -72,9 +78,10 @@ struct VertEqPropsImpl : public VertEqProps {
 };
 
 VertEqProps*
-VertEqProps::create (const IncompPropertiesInterface& fineProps) {
+VertEqProps::create (const IncompPropertiesInterface& fineProps,
+                     const TopSurf& topSurf) {
 	// construct real object which contains all the implementation details
-	auto_ptr <VertEqProps> props (new VertEqPropsImpl (fineProps));
+	auto_ptr <VertEqProps> props (new VertEqPropsImpl (fineProps, topSurf));
 
 	// client owns pointer to constructed fluid object from this point
 	return props.release ();

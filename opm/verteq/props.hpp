@@ -22,10 +22,12 @@ struct VertEqProps : public IncompPropertiesInterface {
 	 * Create an upscaled version of fluid and rock properties.
 	 *
 	 * @param fineProps Fluid and rock properties for the fine grid.
+	 * @param topSurf Grid for which the properties should be upscaled.
 	 * @return Fluid object for the corresponding coarse grid. The caller
 	 * has the responsibility to dispose off the object returned from here.
 	 */
-	static VertEqProps* create (const IncompPropertiesInterface& fineProps);
+	static VertEqProps* create (const IncompPropertiesInterface& fineProps,
+	                            const TopSurf& topSurf);
 };
 
 } // namespace Opm

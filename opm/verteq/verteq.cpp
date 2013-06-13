@@ -39,7 +39,7 @@ VertEqImpl::init(const UnstructuredGrid& fullGrid,
                  const IncompPropertiesInterface& fullProps) {
 	// generate a two-dimensional upscaling as soon as we get the grid
 	ts = auto_ptr <TopSurf> (TopSurf::create (fullGrid));
-	pr = auto_ptr <VertEqProps> (VertEqProps::create (fullProps));
+	pr = auto_ptr <VertEqProps> (VertEqProps::create (fullProps, *ts));
 }
 
 const UnstructuredGrid&
