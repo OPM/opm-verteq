@@ -129,6 +129,14 @@ struct TopSurf : public UnstructuredGrid {
 	double* z0;
 
 	/**
+	 * Height from top of column down to each fine grid block.
+	 *
+	 * This is the accumulated sum of all dz preceeding this block, in each
+	 * column. The first entry is thus always zero.
+	 */
+	double* h;
+
+	/**
 	 * Accumulated height of all blocks in each column.
 	 *
 	 * This is a flat array with number_of_elements items.
