@@ -55,6 +55,25 @@ struct VertEqUpscaler {
 	 */
 	void gather (int col, double* buf, const double* data, int stride, int offset) const;
 
+	/**
+	 * Depth fraction weighted by an expression specified as piecewise values
+	 * downwards a column from the top.
+	 *
+	 * Returned for each block is the integral from the top down to and
+	 * including each block, divided by the total height of the column. The
+	 * last value will thus contain the average for the entire column.
+	 *
+	 * @param col Index of the column for which the expression should be
+	 *            integrated.
+	 *
+	 * @param val Integrand values for each block in the column.
+	 *
+	 * @param res Array that will receive the result. The caller must
+	 *            preallocate storage and pass it as input here. A good idea
+	 *            is to use the view of a column from an rlw_double.
+	 */
+	void wgt_dpt (int col, const double* val, double* res) const;
+
 protected:
 	const TopSurf& ts;
 };

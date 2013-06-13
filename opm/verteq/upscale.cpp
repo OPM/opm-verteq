@@ -29,3 +29,30 @@ VertEqUpscaler::gather (
 		buf[row] = data[pos];
 	}
 }
+
+void
+VertEqUpscaler::wgt_dpt (
+		int col,
+		const double* val,
+		double* res) const {
+
+	// get the weights for this particular column
+	const rlw_double dz = rlw_double (ts.number_of_cells, ts.col_cellpos, ts.dz);
+	const double* dz_col = dz[col];
+
+	// running total
+	double accum = 0.;
+
+	// divisor for this particular column. this should be larger than zero
+	// since the column otherwise wouldn't be active
+	double H = ts.h_tot[col];
+
+	// loop through each of the blocks from the top
+	for (int row = 0; row < dz.size(col); ++row) {
+		// this is \int_{h}^{\zeta_T} f
+		accum += val[row] * dz_col[row];
+
+		// write the average to the resulting array
+		res[row] = accum / H;
+	}
+}
