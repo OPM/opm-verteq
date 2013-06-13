@@ -31,6 +31,7 @@ list (APPEND MAIN_SOURCE_FILES
 	opm/verteq/nav.cpp
 	opm/verteq/props.cpp
 	opm/verteq/topsurf.cpp
+	opm/verteq/upscale.cpp
 	opm/verteq/verteq.cpp
 	)
 
