@@ -31,19 +31,19 @@ struct VertEqPropsImpl : public VertEqProps {
 
 	/* fluid properties; these don't change when upscaling */
 	virtual int numPhases () const {
-		throw OPM_EXC ("Not implemented yet");
+		return fp.numPhases ();
 	}
 
 	virtual const double* viscosity () const {
-		throw OPM_EXC ("Not implemented yet");
+		return fp.viscosity ();
 	}
 
 	virtual const double* density () const {
-		throw OPM_EXC ("Not implemented yet");
+		return fp.density ();
 	}
 
 	virtual const double* surfaceDensity () const {
-		throw OPM_EXC ("Not implemented yet");
+		return fp.surfaceDensity ();
 	}
 
 	/* hydrological (unsaturated zone) properties */
