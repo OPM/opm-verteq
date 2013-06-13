@@ -12,6 +12,10 @@ struct VertEqPropsImpl : public VertEqProps {
 	/// Get the grid information from here
 	const TopSurf& ts;
 
+	// constants to avoid a bunch of "magic" values in the code
+	static const int TWO_DIMS   = 2;
+	static const int THREE_DIMS = 3;
+
 	VertEqPropsImpl (const IncompPropertiesInterface& fineProps,
 	                 const TopSurf& topSurf)
 		: fp (fineProps)
@@ -20,11 +24,13 @@ struct VertEqPropsImpl : public VertEqProps {
 
 	/* rock properties; use volume-weighted averages */
 	virtual int numDimensions () const {
-		throw OPM_EXC ("Not implemented yet");
+		// the upscaled grid is always dimensionally reduced
+		return TWO_DIMS;
 	}
 
 	virtual int numCells () const {
-		throw OPM_EXC ("Not implemented yet");
+		// we'll provide on value for each column in the upscaled grid
+		return ts.number_of_cells;
 	}
 
 	virtual const double* porosity () const {
