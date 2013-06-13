@@ -38,11 +38,7 @@ int main (int argc, char *argv[]) {
 
 	// extract grid from the parse tree
 	const GridManager gridMan (parser);
-	const UnstructuredGrid& fine_grid = *gridMan.c_grid ();
-
-	// upscale to a top surface
-	scoped_ptr <VertEq> ve (VertEq::create (title, param, fine_grid));
-	const UnstructuredGrid& grid = ve->grid ();
+	const UnstructuredGrid& grid = *gridMan.c_grid ();
 
 	// extract fluid, rock and two-phase properties from the parse tree
 	IncompPropertiesFromDeck fluid (parser, grid);
@@ -53,7 +49,7 @@ int main (int argc, char *argv[]) {
 	initStateFromDeck (grid, fluid, parser, gravity [3], state);
 
 	// setup wells from input, using grid and rock properties read earlier
-	WellsManager wells (parser, fine_grid, fluid.permeability());
+	WellsManager wells (parser, grid, fluid.permeability());
 	WellState wellState; wellState.init (wells.c_wells(), state);
 
 	// no sources and no-flow boundary conditions
@@ -64,9 +60,12 @@ int main (int argc, char *argv[]) {
 	SimulatorTimer stepping;
 	stepping.init (parser);
 
+	// upscale to a top surface
+	scoped_ptr <VertEq> ve (VertEq::create (title, param, grid));
+
 	// pressure and transport solvers
 	LinearSolverFactory linsolver (param);
-	SimulatorIncompTwophase sim (param, grid, fluid, 0, wells,
+	SimulatorIncompTwophase sim (param, ve->grid (), fluid, 0, wells,
 	                             src, bc.c_bcs(), linsolver, gravity);
 
 	// if some parameters were unused, it may be that they're spelled wrong
