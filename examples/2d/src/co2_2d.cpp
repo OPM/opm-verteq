@@ -61,11 +61,11 @@ int main (int argc, char *argv[]) {
 	stepping.init (parser);
 
 	// upscale to a top surface
-	scoped_ptr <VertEq> ve (VertEq::create (title, param, grid));
+	scoped_ptr <VertEq> ve (VertEq::create (title, param, grid, fluid));
 
 	// pressure and transport solvers
 	LinearSolverFactory linsolver (param);
-	SimulatorIncompTwophase sim (param, ve->grid (), fluid, 0, wells,
+	SimulatorIncompTwophase sim (param, ve->grid (), ve->props (), 0, wells,
 	                             src, bc.c_bcs(), linsolver, gravity);
 
 	// if some parameters were unused, it may be that they're spelled wrong
