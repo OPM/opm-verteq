@@ -117,6 +117,18 @@ struct VertEqUpscaler {
 	void wgt_dpt (int col, const double* val, double* res) const;
 
 	/**
+	 * Depth-average of a property discretized for each block.
+	 *
+	 * @param col Index of the column for which values should be averaged.
+	 *
+	 * @param val Value for each block in the column.
+	 *
+	 * @return Values weighted by the depth in each block, divided by the
+	 *         total depth of the column.
+	 */
+	double dpt_avg (int col, const double* val) const;
+
+	/**
 	 * Number of rows in a specified column. Use this method to get the
 	 * expected length of arrays containing properties for it. (However, use
 	 * ts.max_vert_res to preallocate space!)

@@ -57,6 +57,29 @@ VertEqUpscaler::wgt_dpt (
 	}
 }
 
+double
+VertEqUpscaler::dpt_avg (
+		int col,
+		const double* val) const {
+
+	// get the weights for this particular column
+	const rlw_double dz = rlw_double (ts.number_of_cells, ts.col_cellpos, ts.dz);
+	const double* dz_col = dz[col];
+
+	// running total
+	double accum = 0.;
+
+	// multiply each row with its depth
+	for (int row = 0; row < dz.size(col); ++row) {
+		accum += val[row] * dz_col[row];
+	}
+
+	// we already have stored the total height of the column; no need to
+	// keep a counter for that too
+	const double avg = accum / ts.h_tot[col];
+	return avg;
+}
+
 int
 VertEqUpscaler::num_rows (
     int col) const {
