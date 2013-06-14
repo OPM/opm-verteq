@@ -2,6 +2,7 @@
 #include <opm/verteq/topsurf.hpp>
 #include <opm/verteq/upscale.hpp>
 #include <opm/verteq/utility/exc.hpp>
+#include <opm/verteq/utility/runlen.hpp>
 #include <algorithm> // fill
 #include <memory> // auto_ptr
 using namespace Opm;
@@ -32,6 +33,10 @@ struct VertEqPropsImpl : public VertEqProps {
 	static const int KYX_OFS_2D = 1 * TWO_DIMS + 0; // (y, x), x = 0, y = 1
 	static const int KYY_OFS_2D = 1 * TWO_DIMS + 1; // (y, y), y = 1
 
+	// we assume this ordering of the phases in arrays
+	static const int GAS = 0;
+	static const int WAT = 1;
+
 	/// Helper object to do averaging
 	const VertEqUpscaler up;
 
@@ -41,14 +46,33 @@ struct VertEqPropsImpl : public VertEqProps {
 	/// Upscaled permeability; this is K in the papers
 	vector <double> upscaled_absperm;
 
+	/// Volume fractions of gas phase, used in averaging
+	RunLenData <double> res_gas_vol; // \phi S_{n,r}
+	RunLenData <double> mob_mix_vol; // \phi (1 - S_{w,r} - S_{n,r})
+	RunLenData <double> res_wat_vol; // \phi (1 - S_{w,r})
+
+	/// Volume-of-gas-phase-fraction-weighted depths-fractions
+	RunLenData <double> res_gas_dpt; // int_{h}^{\zeta_T} \phi S_{n,r} dz
+	RunLenData <double> mob_mix_dpt; // int_{h}^{\zeta_T} \phi (1 - S_{w,r} - S_{n,r} dz
+	RunLenData <double> res_wat_dpt; // int_{h}^{\zeta_T} \phi (1 - S_{w,r}) dz
+
 	VertEqPropsImpl (const IncompPropertiesInterface& fineProps,
 	                 const TopSurf& topSurf)
 		: fp (fineProps)
 		, ts (topSurf)
-		, up (ts) {
+		, up (ts)
+		, res_gas_vol (ts.number_of_cells, ts.col_cellpos)
+		, mob_mix_vol (ts.number_of_cells, ts.col_cellpos)
+		, res_wat_vol (ts.number_of_cells, ts.col_cellpos)
+		, res_gas_dpt (ts.number_of_cells, ts.col_cellpos)
+		, mob_mix_dpt (ts.number_of_cells, ts.col_cellpos)
+		, res_wat_dpt (ts.number_of_cells, ts.col_cellpos) {
 
 		// allocate memory to store results for faster lookup later
 		upscaled_poro.resize (ts.number_of_cells);
+
+		// number of phases (should be 2)
+		const int num_phases = fp.numPhases ();
 
 		// buffers that holds intermediate values for each column;
 		// pre-allocate to avoid doing that inside the loop
@@ -56,6 +80,8 @@ struct VertEqPropsImpl : public VertEqProps {
 		vector <double> kxx (ts.max_vert_res, 0.);  // abs.perm.
 		vector <double> kxy (ts.max_vert_res, 0.);
 		vector <double> kyy (ts.max_vert_res, 0.);
+		vector <double> sgr   (ts.max_vert_res * num_phases, 0.); // residual CO2
+		vector <double> l_swr (ts.max_vert_res * num_phases, 0.); // 1 - residual brine
 
 		// pointer to all porosities in the fine grid
 		const double* fine_poro = fp.porosity ();
@@ -87,6 +113,39 @@ struct VertEqPropsImpl : public VertEqProps {
 			upscaled_absperm[PERM_MATRIX_2D * col + KXY_OFS_2D] = up_kxy;
 			upscaled_absperm[PERM_MATRIX_2D * col + KYX_OFS_2D] = up_kxy;
 			upscaled_absperm[PERM_MATRIX_2D * col + KYY_OFS_2D] = up_kyy;
+
+			// query the fine properties for the residual saturations;
+			// notice that we implicitly get the brine saturation as the maximum
+			// allowable co2 saturation; now we've got the values we need, but
+			// only every other item (due to that both phases are stored)
+			const rlw_int col_cells (ts.number_of_cells, ts.col_cellpos, ts.col_cells);
+			fp.satRange (col_cells.size (col), col_cells[col], &sgr[0], &l_swr[0]);
+
+			// cache pointers to this particular column to avoid recomputing
+			// the starting point for each and every item
+			double* res_gas_col = res_gas_vol[col];
+			double* mob_mix_col = mob_mix_vol[col];
+			double* res_wat_col = res_wat_vol[col];
+
+			for (int row = 0; row < col_cells.size (col); ++row) {
+				// multiply with num_phases because the saturations for *both*
+				// phases are store consequtively (as a record); we only need
+				// the residuals framed as co2 saturations
+				const double sgr_ = sgr[row * num_phases + GAS];
+				const double l_swr_ = l_swr[row * num_phases + GAS];
+
+				// portions of the block that are filled with: residual co2,
+				// mobile fluid and residual brine, respectively
+				res_gas_col[row] = poro[row] * sgr_;            // \phi*S_{n,r}
+				mob_mix_col[row] = poro[row] * (l_swr_ - sgr_); // \phi*(1-S_{w,r}-S_{n_r})
+				res_wat_col[row] = poro[row] * l_swr_;          // \phi*(1-S_{w,r}
+			}
+
+			// weight the relative depth factor (how close are we towards a
+			// completely filled column) with the volume portions
+			up.wgt_dpt (col, &res_gas_col[0], &res_gas_dpt[col][0]);
+			up.wgt_dpt (col, &mob_mix_col[0], &mob_mix_dpt[col][0]);
+			up.wgt_dpt (col, &res_gas_col[0], &res_wat_dpt[col][0]);
 		}
 	}
 
