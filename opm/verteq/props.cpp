@@ -1,6 +1,7 @@
 #include <opm/verteq/props.hpp>
 #include <opm/verteq/topsurf.hpp>
 #include <opm/verteq/utility/exc.hpp>
+#include <algorithm> // fill
 #include <memory> // auto_ptr
 using namespace Opm;
 using namespace std;
@@ -79,7 +80,13 @@ struct VertEqPropsImpl : public VertEqProps {
 	                       const int *cells,
 	                       double *smin,
 	                       double *smax) const {
-		throw OPM_EXC ("Not implemented yet");
+		// saturation is just another name for "how much of the column
+		// is filled", so every range from nothing to completely filled
+		// are valid. even though there is residual water/gas in each
+		// block, this is not seen from the 2D code
+		const int np = n * numPhases ();
+		fill (smin, smin + np, 0.);
+		fill (smax, smax + np, 1.);
 	}
 };
 
