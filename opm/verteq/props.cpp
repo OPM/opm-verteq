@@ -4,6 +4,7 @@
 #include <opm/verteq/utility/exc.hpp>
 #include <opm/verteq/utility/runlen.hpp>
 #include <algorithm> // fill
+#include <cmath> // sqrt
 #include <memory> // auto_ptr
 using namespace Opm;
 using namespace std;
@@ -140,6 +141,21 @@ struct VertEqPropsImpl : public VertEqProps {
 		// lookup to find the height that gives this mobile volume
 		const Elevation zeta_M = up.find (col, mob_mix_dpt[col], gas_vol);
 		return zeta_M;
+	}
+
+	/**
+	 * Magnitude of (lateral) permeability tensor used in weighting.
+	 *
+	 * Since the upscaled relative permeabilities is a weighting of
+	 * the various fine-scale absolute ones, they will end up as tensors
+	 * as well. However, our simulator code needs a scalar to measure
+	 * the "weight" of an individual tensor.
+	 *
+	 * We choose the Frobenius norm as the contraction operation on the
+	 * tensor.
+	 */
+	double magnitude (double kxx, double kxy, double kyy) {
+		return sqrt (kxx*kxx + 2*kxy*kxy + kyy*kyy);
 	}
 
 	VertEqPropsImpl (const IncompPropertiesInterface& fineProps,
