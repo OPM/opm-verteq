@@ -191,6 +191,7 @@ struct VertEqPropsImpl : public VertEqProps {
 		vector <double> kyy (ts.max_vert_res, 0.);
 		vector <double> sgr   (ts.max_vert_res * num_phases, 0.); // residual CO2
 		vector <double> l_swr (ts.max_vert_res * num_phases, 0.); // 1 - residual brine
+		vector <double> lkl (ts.max_vert_res); // magnitude of abs.perm.; k_||
 
 		// saturations and rel.perms. of each phase, assuming maximum filling of...
 		vector <double> wat_sat (ts.max_vert_res * num_phases, 0.); // brine; res. CO2
@@ -228,6 +229,15 @@ struct VertEqPropsImpl : public VertEqProps {
 			upscaled_absperm[PERM_MATRIX_2D * col + KXY_OFS_2D] = up_kxy;
 			upscaled_absperm[PERM_MATRIX_2D * col + KYX_OFS_2D] = up_kxy;
 			upscaled_absperm[PERM_MATRIX_2D * col + KYY_OFS_2D] = up_kyy;
+
+			// contract each fine perm. to a scalar, used for weight later
+			for (int row = 0; row < up.num_rows (col); ++row) {
+				lkl[row] = magnitude (kxx[row], kxy[row], kyy[row]);
+			}
+
+			// we only need the relative weight, so get the depth-averaged
+			// total weight, which we'll use to scale the weights below
+			//const double tot_lkl = up.dpt_avg (col, &lkl[0]); // 1/K^{-1}
 
 			// query the fine properties for the residual saturations;
 			// notice that we implicitly get the brine saturation as the maximum
