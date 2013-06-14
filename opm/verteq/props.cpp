@@ -176,6 +176,12 @@ struct VertEqPropsImpl : public VertEqProps {
 		vector <double> sgr   (ts.max_vert_res * num_phases, 0.); // residual CO2
 		vector <double> l_swr (ts.max_vert_res * num_phases, 0.); // 1 - residual brine
 
+		// saturations and rel.perms. of each phase, assuming maximum filling of...
+		vector <double> wat_sat (ts.max_vert_res * num_phases, 0.); // brine; res. CO2
+		vector <double> gas_sat (ts.max_vert_res * num_phases, 0.); // CO2; res. brine
+		vector <double> wat_mob (ts.max_vert_res * num_phases, 0.); // k_r(S_c=S_{c,r})
+		vector <double> gas_mob (ts.max_vert_res * num_phases, 0.); // k_r(S_c=1-S_{b,r})
+
 		// pointer to all porosities in the fine grid
 		const double* fine_poro = fp.porosity ();
 		const double* fine_perm = fp.permeability ();
@@ -239,6 +245,28 @@ struct VertEqPropsImpl : public VertEqProps {
 			up.wgt_dpt (col, &res_gas_col[0], &res_gas_dpt[col][0]);
 			up.wgt_dpt (col, &mob_mix_col[0], &mob_mix_dpt[col][0]);
 			up.wgt_dpt (col, &res_gas_col[0], &res_wat_dpt[col][0]);
+
+			// now, when we queried the saturation ranges, we got back the min.
+			// and max. sat., and when there is min. of one, then there should
+			// be max. of the other; however, these data are in different arrays!
+			// cross-pick such that we get (min CO2, max brine), (max CO2, min brine)
+			// instead of (min CO2, min brine), (max CO2, max brine). this code
+			// has no other effect than to satisfy the ordering of items required
+			// for the relperm() call
+			for (int row = 0; row < col_cells.size (col); ++row) {
+				wat_sat[row * num_phases + GAS] = sgr[row * num_phases + GAS];
+				wat_sat[row * num_phases + WAT] = l_swr[row * num_phases + WAT];
+				gas_sat[row * num_phases + GAS] = l_swr[row * num_phases + GAS];
+				gas_sat[row * num_phases + WAT] = sgr[row * num_phases + WAT];
+			}
+
+			// get rel.perm. for those cases where one phase is (maximally) mobile
+			// and the other one is immobile (at residual saturation); we get back
+			// rel.perm. for both phases, although only one of them is of interest
+			// for us (the other one should be zero). we have no interest in the
+			// derivative of the fine-scale rel.perm.
+			fp.relperm (col_cells.size (col), &wat_sat[0], col_cells[col], &wat_mob[0], 0);
+			fp.relperm (col_cells.size (col), &gas_sat[0], col_cells[col], &gas_mob[0], 0);
 		}
 	}
 
