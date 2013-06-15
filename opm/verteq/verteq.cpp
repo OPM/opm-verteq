@@ -3,6 +3,7 @@
 #include <opm/verteq/props.hpp>
 #include <opm/verteq/topsurf.hpp>
 #include <opm/verteq/verteq.hpp>
+#include <opm/core/simulator/TwophaseState.hpp>
 #include <opm/core/utility/parameters/ParameterGroup.hpp>
 #include <memory>           // auto_ptr
 
@@ -18,6 +19,9 @@ struct VertEqImpl : public VertEq {
 	           const IncompPropertiesInterface& fullProps);
 	virtual const UnstructuredGrid& grid();
 	virtual const IncompPropertiesInterface& props();
+	virtual void upscale (const TwophaseState& fineScale,
+	                      TwophaseState& coarseScale);
+	virtual void notify (const TwophaseState& coarseScale);
 
 	auto_ptr <TopSurf> ts;
 	auto_ptr <VertEqProps> pr;
@@ -52,4 +56,15 @@ const IncompPropertiesInterface&
 VertEqImpl::props () {
 	// simply return the standard part of the grid
 	return *(pr.get ());
+}
+
+void
+VertEqImpl::upscale (const TwophaseState& fineScale,
+                     TwophaseState& coarseScale) {
+	// TODO:
+}
+
+void
+VertEqImpl::notify (const TwophaseState& coarseScale) {
+	// TODO:
 }
