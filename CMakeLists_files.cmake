@@ -33,6 +33,7 @@ list (APPEND MAIN_SOURCE_FILES
 	opm/verteq/topsurf.cpp
 	opm/verteq/upscale.cpp
 	opm/verteq/verteq.cpp
+	opm/verteq/wrapper.cpp
 	)
 
 # originally generated with the command:
@@ -59,4 +60,5 @@ list (APPEND PUBLIC_HEADER_FILES
 	opm/verteq/topsurf.hpp
 	opm/verteq/verteq.hpp
 	opm/verteq/visibility.hpp
+	opm/verteq/wrapper.hpp
 	)
