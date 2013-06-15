@@ -4,6 +4,8 @@
 // Copyright (C) 2013 Uni Research AS
 // This file is licensed under the GNU General Public License v3.0
 
+#include <string>
+
 #ifndef OPM_VERTEQ_VISIBILITY_HPP_INCLUDED
 #include <opm/verteq/visibility.hpp>
 #endif /* OPM_VERTEQ_VISIBILITY_HPP_INCLUDED */
