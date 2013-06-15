@@ -61,7 +61,10 @@ VertEqImpl::props () {
 void
 VertEqImpl::upscale (const TwophaseState& fineScale,
                      TwophaseState& coarseScale) {
-	// TODO:
+	// dimension state object to the top grid
+	coarseScale.init (*ts, pr->numPhases ());
+
+	// TODO: set the initial state from the fine-scale state
 }
 
 void
