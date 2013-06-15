@@ -57,8 +57,8 @@ int main (int argc, char *argv[]) {
 
 	// pressure and transport solvers
 	LinearSolverFactory linsolver (param);
-	SimulatorIncompTwophase sim (param, grid, fluid, 0, wells,
-	                             src, bc.c_bcs(), linsolver, gravity);
+	SimulatorIncompTwophase sim (
+		param, grid, fluid, 0, wells, src, bc.c_bcs(), linsolver, gravity);
 
 	// if some parameters were unused, it may be that they're spelled wrong
 	if (param.anyUnused ()) {

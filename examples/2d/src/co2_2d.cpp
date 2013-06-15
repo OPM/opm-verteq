@@ -13,16 +13,13 @@
 #include <opm/core/linalg/LinearSolverFactory.hpp>
 #include <opm/core/simulator/SimulatorIncompTwophase.hpp>
 #include <opm/core/simulator/SimulatorReport.hpp>
-#include <opm/verteq/verteq.hpp>
-
-#include <boost/scoped_ptr.hpp>
+#include <opm/verteq/wrapper.hpp>
 
 #include <iostream>
 #include <vector>
 
 using namespace Opm;
 using namespace Opm::parameter;
-using namespace boost;
 using namespace std;
 
 int main (int argc, char *argv[]) {
@@ -34,7 +31,6 @@ int main (int argc, char *argv[]) {
 	const string filename = param.get <string> ("filename");
 	cout << "Reading deck: " << filename << endl;
 	const EclipseGridParser parser (filename);
-	const string title = parser.getTITLE ().name ();
 
 	// extract grid from the parse tree
 	const GridManager gridMan (parser);
@@ -60,13 +56,10 @@ int main (int argc, char *argv[]) {
 	SimulatorTimer stepping;
 	stepping.init (parser);
 
-	// upscale to a top surface
-	scoped_ptr <VertEq> ve (VertEq::create (title, param, grid, fluid));
-
 	// pressure and transport solvers
 	LinearSolverFactory linsolver (param);
-	SimulatorIncompTwophase sim (param, ve->grid (), ve->props (), 0, wells,
-	                             src, bc.c_bcs(), linsolver, gravity);
+	VertEqWrapper<SimulatorIncompTwophase> sim (
+		param, grid, fluid, 0, wells, src, bc.c_bcs(), linsolver, gravity);
 
 	// if some parameters were unused, it may be that they're spelled wrong
 	if (param.anyUnused ()) {
