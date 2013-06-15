@@ -30,6 +30,7 @@ list (APPEND MAIN_SOURCE_FILES
 	opm/verteq/utility/runlen.cpp
 	opm/verteq/nav.cpp
 	opm/verteq/props.cpp
+	opm/verteq/state.cpp
 	opm/verteq/topsurf.cpp
 	opm/verteq/upscale.cpp
 	opm/verteq/verteq.cpp
@@ -57,6 +58,7 @@ list (APPEND PUBLIC_HEADER_FILES
 	opm/verteq/utility/exc.hpp
 	opm/verteq/utility/runlen.hpp
 	opm/verteq/utility/visibility.h
+	opm/verteq/state.hpp
 	opm/verteq/topsurf.hpp
 	opm/verteq/verteq.hpp
 	opm/verteq/visibility.hpp
