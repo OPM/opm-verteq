@@ -28,6 +28,22 @@ struct VertEqProps : public IncompPropertiesInterface {
 	 */
 	static VertEqProps* create (const IncompPropertiesInterface& fineProps,
 	                            const TopSurf& topSurf);
+
+	/**
+	 * Update residual saturation of CO2 through-out the domain.
+	 *
+	 * When the plume move forward, it leaves behind some residual
+	 * CO2 which wasn't there before. This must be accounted for when
+	 * calculating the position of the interface from the upscaled
+	 * saturation.
+	 *
+	 * @param sat Saturation for the phases in the coarse domain. It
+	 *            consists of one record for each column in the top
+	 *            surface grid, where each record has one saturation
+	 *            for each phase. The ordering of the phases is the
+	 *            same as in the properties interface.
+	 */
+	virtual void upd_res_sat (const double* sat) = 0;
 };
 
 } // namespace Opm

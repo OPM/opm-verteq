@@ -56,6 +56,10 @@ struct VertEqPropsImpl : public VertEqProps {
 	RunLenData <double> mob_mix_dpt; // int_{h}^{\zeta_T} \phi (1 - S_{w,r} - S_{n,r} dz
 	RunLenData <double> res_wat_dpt; // int_{h}^{\zeta_T} \phi (1 - S_{w,r}) dz
 
+	virtual void upd_res_sat (const double* snap) {
+		// TODO:
+	}
+
 	VertEqPropsImpl (const IncompPropertiesInterface& fineProps,
 	                 const TopSurf& topSurf)
 		: fp (fineProps)

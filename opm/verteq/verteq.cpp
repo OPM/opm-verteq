@@ -65,9 +65,16 @@ VertEqImpl::upscale (const TwophaseState& fineScale,
 	coarseScale.init (*ts, pr->numPhases ());
 
 	// TODO: set the initial state from the fine-scale state
+
+	// update the properties from the initial state (the
+	// simulation object won't call this method before the
+	// first timestep; it assumes that the state is initialized
+	// accordingly (which is what we do here now)
+	notify (coarseScale);
 }
 
 void
 VertEqImpl::notify (const TwophaseState& coarseScale) {
-	// TODO:
+	// forward this request to the properties we have stored
+	pr->upd_res_sat (&coarseScale.saturation()[0]);
 }
