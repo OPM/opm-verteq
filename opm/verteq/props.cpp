@@ -158,6 +158,11 @@ struct VertEqPropsImpl : public VertEqProps {
 		return sqrt (kxx*kxx + 2*kxy*kxy + kyy*kyy);
 	}
 
+	// weighted rel.perm. for CO2 when residual brine is present, and the
+	// depth for each block further weighted with this.
+	RunLenData <double> prm_gas;      // K^{-1} k_|| k_{g,r} (1-s_{w,r})
+	RunLenData <double> prm_gas_int;  // 1/H \int_h^{\zeta_T} above dz
+
 	VertEqPropsImpl (const IncompPropertiesInterface& fineProps,
 	                 const TopSurf& topSurf)
 		: fp (fineProps)
@@ -175,7 +180,10 @@ struct VertEqPropsImpl : public VertEqProps {
 		, max_gas_sat (ts.number_of_cells, 0.)
 
 		// this is the elevation that corresponds to no CO2 sat.
-		, max_gas_elev (ts.number_of_cells, Elevation (0, 0.)) {
+		, max_gas_elev (ts.number_of_cells, Elevation (0, 0.))
+
+		, prm_gas (ts.number_of_cells, ts.col_cellpos)
+		, prm_gas_int (ts.number_of_cells, ts.col_cellpos) {
 
 		// allocate memory to store results for faster lookup later
 		upscaled_poro.resize (ts.number_of_cells);
@@ -237,7 +245,7 @@ struct VertEqPropsImpl : public VertEqProps {
 
 			// we only need the relative weight, so get the depth-averaged
 			// total weight, which we'll use to scale the weights below
-			//const double tot_lkl = up.dpt_avg (col, &lkl[0]); // 1/K^{-1}
+			const double tot_lkl = up.dpt_avg (col, &lkl[0]); // 1/K^{-1}
 
 			// query the fine properties for the residual saturations;
 			// notice that we implicitly get the brine saturation as the maximum
@@ -293,6 +301,22 @@ struct VertEqPropsImpl : public VertEqProps {
 			// derivative of the fine-scale rel.perm.
 			fp.relperm (col_cells.size (col), &wat_sat[0], col_cells[col], &wat_mob[0], 0);
 			fp.relperm (col_cells.size (col), &gas_sat[0], col_cells[col], &gas_mob[0], 0);
+
+			// cache the pointers here to avoid indexing in the loop
+			double* prm_gas_col = prm_gas[col];
+
+			for (int row = 0; row < up.num_rows (col); ++row) {
+				// rel.perm. for CO2 when having maximal sat. (only residual brine); this
+				// is the rel.perm. for the CO2 that is in the plume
+				const double kr_plume = gas_mob[row * num_phases + GAS];
+
+				// upscaled rel. perm. change for this block; we'll use this to weight
+				// the depth fractions when we integrate to get the upscaled rel. perm.
+				prm_gas_col[row] = lkl[row] / tot_lkl * kr_plume;
+			}
+
+			// integrate the derivate to get the upscaled rel. perm.
+			up.wgt_dpt (col, prm_gas_col, &prm_gas_int[col][0]);
 		}
 	}
 
