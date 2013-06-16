@@ -405,7 +405,19 @@ struct VertEqPropsImpl : public VertEqProps {
 			// rel.perm. for CO2 at this location; simply look up in the
 			// table of integrated rel.perm. changes by depth
 			const double Krg = up.eval (col, prm_gas_int[col], intf);
+
+			// registered level of maximum CO2 sat. (where there is at least
+			// residual CO2
+			const Elevation res_lvl = max_gas_elev[col]; // zeta_R
+
+			// rel.perm. for brine at this location; notice that all of
+			// our expressions uses the CO2 saturation as parameter
+			const double Krw = 1 - (up.eval (col, prm_res_int[col], res_lvl)
+			                       +up.eval (col, prm_wat_int[col], intf));
+
+			// assign to output
 			kr[i * num_phases + GAS] = Krg;
+			kr[i * num_phases + WAT] = Krw;
 
 			// was derivatives requested?
 			if (dkrds) {
@@ -418,11 +430,19 @@ struct VertEqPropsImpl : public VertEqProps {
 				// possible change in CO2 rel.perm.
 				const double dKrg_dSg = upscaled_poro[col] / mob_vol * prm_chg_gas;
 
+				// rel.perm. change for brine: K^{-1} k_|| k_{r,w}(s_{g,r})
+				const double prm_chg_wat = up.eval (col, prm_wat[col], intf);
+
+				// possible change in brine rel.perm.
+				const double dKrw_dSg = -upscaled_poro[col] / mob_vol * prm_chg_wat;
+
 				// assign to output: since Sw = 1 - Sg, then dkr_g/ds_w = -dkr_g/ds_g
 				// viewed as a 2x2 record; the minor index designates the denominator
 				// (saturation) and the major index designates the numerator (rel.perm.)
 				dkrds[i * (num_phases * num_phases) + num_phases * GAS + GAS] =  dKrg_dSg;
 				dkrds[i * (num_phases * num_phases) + num_phases * GAS + WAT] = -dKrg_dSg;
+				dkrds[i * (num_phases * num_phases) + num_phases * WAT + GAS] =  dKrw_dSg;
+				dkrds[i * (num_phases * num_phases) + num_phases * WAT + WAT] = -dKrw_dSg;
 			}
 		}
 	}
