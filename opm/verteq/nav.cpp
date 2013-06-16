@@ -41,6 +41,10 @@ const Side <Dim2D> Side <Dim2D>::ALL[] = {
 	Side (Dim2D::Y, Dir::INC)  // J+
 };
 
+// sides that exists as standalone constants
+const Side3D UP   (Dim3D::Z, Dir::DEC);
+const Side3D DOWN (Dim3D::Z, Dir::INC);
+
 // print carriers (for debugging)
 ostream& operator << (ostream& os, const Coord2D& c) {
 	return (os << '(' << c.i () << ',' << c.j () << ')'); // e.g. "(3,2)"

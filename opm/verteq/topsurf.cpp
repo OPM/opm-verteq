@@ -4,6 +4,7 @@
 #include <opm/verteq/nav.hpp>
 #include <opm/verteq/topsurf.hpp>
 #include <opm/verteq/utility/exc.hpp>
+#include <opm/verteq/utility/runlen.hpp> // rlw_int
 #include <opm/core/grid/cornerpoint_grid.h> // compute_geometry
 #include <boost/io/ios_state.hpp> // ios_all_saver
 #include <algorithm> // min, max
@@ -92,6 +93,9 @@ struct TopSurfBuilder {
 
 		// identify active faces in the grid
 		create_faces ();
+
+		// cache fine block and column metrics
+		create_heights ();
 	}
 
 	// various stages of the build process, supposed to be called in
@@ -171,6 +175,9 @@ private:
 		ts.global_cell = new int [ts.number_of_cells];
 		ts.col_cellpos = new int [ts.number_of_cells+1];
 
+		// we haven't filled any columns yet, so this is a sensible init value
+		ts.max_vert_res = 0;
+
 		// there is no elements before the first column, so this number is
 		// always zero. it is written to the array to maintain a straight code
 		// path in calculations.
@@ -194,6 +201,11 @@ private:
 				// note the number of elements there now are before the next column;
 				// in addition to all the previous ones, our elements are now added
 				ts.col_cellpos[elem_id+1] = ts.col_cellpos[elem_id] + act_cnt[col];
+
+				// update the largest number of these seen so far
+				ts.max_vert_res = max (ts.max_vert_res, act_cnt[col]);
+
+				// only increment this if we found an active column, elem_id <= col
 				elem_id++;
 			}
 		}
@@ -201,6 +213,7 @@ private:
 		// now write indices from the fine grid into the column map of the surface
 		// we end up with a list of element that are in each column
 		ts.col_cells = new int [fine_grid.number_of_cells];
+		ts.fine_col = new int [fine_grid.number_of_cells];
 		for (int cell = 0; cell < fine_grid.number_of_cells; ++cell) {
 			// get the Cartesian index for this element
 			const Cart3D::elem_t cart_ndx = fine_grid.global_cell[cell];
@@ -222,6 +235,10 @@ private:
 			// have calculated the position based on depth, the list will be
 			// sorted downwards up when we are done
 			ts.col_cells[segment + offset] = cell;
+
+			// reverse mapping; allows us to quickly figure out the corresponding
+			// column of a location (for instance for a well)
+			ts.fine_col[cell] = elem_id;
 		}
 
 		// these members will be filled by computeGeometry, but needs valid
@@ -560,6 +577,11 @@ private:
 				ts.face_nodes[start_pos + 0] = src[cart_face];
 				ts.face_nodes[start_pos + 1] = dst[cart_face];
 
+				// TODO: If a vertical fault displaces two column so that there
+				// is no longer connection between them, they will be reconnected
+				// here. This condition can be detected by comparing the top and
+				// bottom surface.
+
 				// neighbours should already be stored in the right orientation
 				ts.face_cells[face_glob_id + 0] = pri_elem[cart_face];
 				ts.face_cells[face_glob_id + 1] = sec_elem[cart_face];
@@ -595,6 +617,113 @@ private:
 		}
 		ts.cell_facepos[ts.number_of_cells] = QUAD_SIDES * ts.number_of_cells;
 	}
+
+	/**
+	 * Specific face number of a given side of an element.
+	 *
+	 * @param glob_elem_id Element index in the fine grid.
+	 * @param s Side to locate
+	 * @return Index of the face of the element which is this side
+	 *
+	 * @see Opm::UP, Opm::DOWN
+	 */
+	int find_face (int glob_elem_id, const Side3D& s) {
+		// this is the tag we are looking for
+		const int target_tag = s.facetag ();
+
+		// this is the matrix we are looking in
+		const rlw_int cell_facetag = grid_cell_facetag (fine_grid);
+
+		// we are returning values from this matrix
+		const rlw_int cell_faces = grid_cell_faces (fine_grid);
+
+		// loop through all faces for this element; face_ndx is the local
+		// index amongst faces for just this one element.
+		for (int local_face = 0;
+		     local_face < cell_facetag.size (glob_elem_id);
+		     ++local_face) {
+
+			// if we found a match, then return this; don't look any more
+			if (cell_facetag[glob_elem_id][local_face] == target_tag) {
+
+				// return the (global) index of the face, not the tag!
+				return cell_faces[glob_elem_id][local_face];
+			}
+		}
+
+		// in a structured grid we expect to find every face
+		throw OPM_EXC ("Element %d does not have face #%d", glob_elem_id, target_tag);
+	}
+
+	/**
+	 * Get absolute elevation (z-coordinate) of a face. This uses the
+	 * elevation at the centroid as representative of the entire face.
+	 *
+	 * @param glob_elem_id Element index in the fine grid.
+	 * @param s Side to locate.
+	 * @return Elevation for the midpoint of this face.
+	 */
+	double find_zcoord (int glob_elem_id, const Side3D& s) {
+		// find the desired face for this element
+		const int face_ndx = find_face (glob_elem_id, s);
+
+		// get the z-coordinate for it
+		const int z_ndx = face_ndx * Dim3D::COUNT + Dim3D::Z.val;
+		const double z = fine_grid.face_centroids[z_ndx];
+		return z;
+	}
+
+	/**
+	 * Height of a particular element.
+	 *
+	 * @param glob_elem_id Element index in the fine grid.
+	 * @return Difference between center of top and bottom face.
+	 */
+	double find_height (int glob_elem_id) {
+		// get the z-coordinate for each the top and bottom face for this element
+		const double up_z = find_zcoord (glob_elem_id, UP);
+		const double down_z = find_zcoord (glob_elem_id, DOWN);
+
+		// the side that is down should have the z coordinate with highest magnitude
+		const double height = down_z - up_z;
+		return height;
+	}
+
+	void create_heights () {
+		// allocate memory to hold the heights
+		ts.dz = new double [fine_grid.number_of_cells];
+		ts.h = new double [fine_grid.number_of_cells];
+		ts.z0 = new double [ts.number_of_cells];
+		ts.h_tot = new double [ts.number_of_cells];
+
+		// view that lets us treat it as a matrix
+		const rlw_int blk_id (ts.number_of_cells, ts.col_cellpos, ts.col_cells);
+		const rlw_double dz (ts.number_of_cells, ts.col_cellpos, ts.dz);
+		const rlw_double h (ts.number_of_cells, ts.col_cellpos, ts.h);
+
+		// find all measures per column
+		for (int col = 0; col < blk_id.cols (); ++col) {
+			// reference height for this column (if there is any elements)
+			if (blk_id.size (col)) {
+				const int top_ndx = blk_id[col][0];
+				ts.z0[col] = find_zcoord (top_ndx, UP);
+			}
+
+			// reset height for each column
+			double accum = 0.;
+
+			// height of each element in the column element
+			double* const dz_col = dz[col];
+			double* const h_col = h[col];
+			for (int col_elem = 0; col_elem < blk_id.size (col); ++col_elem) {
+				h_col[col_elem] = accum;
+				accum += dz_col[col_elem] = find_height (blk_id[col][col_elem]);
+			}
+
+			// store total accumulated height at the end for each column
+			ts.h_tot[col] = accum;
+		}
+	}
 };
 
 TopSurf*
@@ -617,7 +746,11 @@ TopSurf::create (const UnstructuredGrid& fine_grid) {
 
 TopSurf::TopSurf ()
 	: col_cells (0)
-	, col_cellpos (0) {
+	, col_cellpos (0)
+	, fine_col (0)
+	, dz (0)
+	, z0 (0)
+	, h_tot (0) {
 	// zero initialize all members that come from UnstructuredGrid
 	// since that struct is a C struct, it doesn't have a ctor
 	dimensions = 0;
@@ -661,4 +794,9 @@ TopSurf::~TopSurf () {
 	// these are the extra members that are TopSurf specific
 	delete [] col_cells;
 	delete [] col_cellpos;
+	delete [] fine_col;
+	delete [] dz;
+	delete [] h;
+	delete [] z0;
+	delete [] h_tot;
 }

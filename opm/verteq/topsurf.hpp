@@ -46,6 +46,17 @@ struct TopSurf : public UnstructuredGrid {
 	 * Use this field together with the col_cellpos to iterate through a column
 	 * in the fine grid.
 	 *
+	 * @example
+	 * @code{.cpp}
+	 * TopSurf* ts = ...;
+	 * rlw_int col_cells (ts->number_of_cells, ts->col_cellpos, ts->col_cells);
+	 * for (int col = 0; col < col_cells.cols(); ++col) {
+	 *   for (int block = 0; block < col_cells.size (col); ++block) {
+	 *      ... col_cells[col][block] ...
+	 *   }
+	 * }
+	 * @endcode
+	 *
 	 * @see TopSurf::column, TopSurf::col_cellpos
 	 */
 	int* col_cells;
@@ -63,6 +74,81 @@ struct TopSurf : public UnstructuredGrid {
 	 * @see TopSurf::column, TopSurf::col_cellpos
 	 */
 	int* col_cellpos;
+
+	/**
+	 * Maximum vertical resolution, in blocks.
+	 *
+	 * This holds the largest number of blocks there is in any column in the
+	 * fine grid, i.e. max_vert_res >= col_cellpos[i+1] - col_cellpos[i], for
+	 * any i in [0,number_of_cells-1]. Use this measure to allocate sufficient
+	 * space for temporary storage that holds column data.
+	 */
+	int max_vert_res;
+
+	/**
+	 * Mapping from underlaying fine grid into top surface grid.
+	 *
+	 * For each element e in the fine grid, cell_col[e] is the index of the
+	 * column/cell in the top surface. The number of cells in the fine grid
+	 * can be found in col_cellpos[number_of_cells+1].
+	 *
+	 * Note: The indices in this array is NOT cell indices of this grid,
+	 * but rather of the underlaying grid. Instead, it are the values that
+	 * are stored in this array which are element identities.
+	 *
+	 * @see TopSurf::col_cellpos, TopSurf::col_cells
+	 */
+	int* fine_col;
+
+	/**
+	 * Height in each fine grid block, setup in columns.
+	 *
+	 * For each column, there is a consecutive list of height for each fine
+	 * grid block in that column. This array has the same format as the
+	 * col_cells run-length matrix, and the heights given here correspond to
+	 * the indices in that matrix.
+	 *
+	 * The height of a block is defined as the z-coordinate difference
+	 * between the centroid of the top face and the centroid of the bottom
+	 * face.
+	 *
+	 * @see TopSurf::col_cells
+	 */
+	double* dz;
+
+	/**
+	 * Reference height for each column.
+	 *
+	 * This is a flat array with number_of_elements items.
+	 *
+	 * The reference height of a column is defined as the z-coordinate of
+	 * the centroid of the top face of the upper block in the column. From
+	 * these values and (a subset of) the values in face_centroids it is
+	 * possible to recreate the 2.5D surface of the top.
+	 */
+	double* z0;
+
+	/**
+	 * Height from top of column down to each fine grid block.
+	 *
+	 * This is the accumulated sum of all dz preceeding this block, in each
+	 * column. The first entry is thus always zero.
+	 */
+	double* h;
+
+	/**
+	 * Accumulated height of all blocks in each column.
+	 *
+	 * This is a flat array with number_of_elements items.
+	 *
+	 * Sum of all the heights of the blocks in each column. Since a gap between
+	 * blocks is a violation of the vertical equilibrium assumption, this value
+	 * should be the z-coordinate of the bottom face of the last block, up to
+	 * numerical rounding errors.
+	 *
+	 * @see TopSurf::dz, TopSurf::z0
+	 */
+	double* h_tot;
 
 	/**
 	 * Create an upscaled grid based on a full, three-dimensional grid.
