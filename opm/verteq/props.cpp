@@ -366,7 +366,43 @@ struct VertEqPropsImpl : public VertEqProps {
 	                      const int *cells,
 	                      double *kr,
 	                      double *dkrds) const {
-		throw OPM_EXC ("Not implemented yet");
+		// cache this on the outside of the loop
+		const int num_phases = numPhases();
+
+		// process each column/cell individually
+		for (int i = 0; i < n; ++i) {
+			// index (into the upscaled grid) of the column
+			const int col = cells[i];
+
+			// get the (upscaled) CO2 saturation
+			const double Sg = s[i * num_phases + GAS];
+
+			// get the block number that contains the active interface
+			const Elevation intf = intf_elev (col, Sg); // zeta_M
+
+			// rel.perm. for CO2 at this location; simply look up in the
+			// table of integrated rel.perm. changes by depth
+			const double Krg = up.eval (col, prm_gas_int[col], intf);
+			kr[i * num_phases + GAS] = Krg;
+
+			// was derivatives requested?
+			if (dkrds) {
+				// volume available for the mobile liquid/gas: \phi (1-s_{w,r}-s_{g,r})
+				const double mob_vol = up.eval (col, mob_mix_vol[col], intf);
+
+				// rel.perm. change for CO2: K^{-1} k_|| k_{r,g}(1-s_{w,r})
+				const double prm_chg_gas = up.eval (col, prm_gas[col], intf);
+
+				// possible change in CO2 rel.perm.
+				const double dKrg_dSg = upscaled_poro[col] / mob_vol * prm_chg_gas;
+
+				// assign to output: since Sw = 1 - Sg, then dkr_g/ds_w = -dkr_g/ds_g
+				// viewed as a 2x2 record; the minor index designates the denominator
+				// (saturation) and the major index designates the numerator (rel.perm.)
+				dkrds[i * (num_phases * num_phases) + num_phases * GAS + GAS] =  dKrg_dSg;
+				dkrds[i * (num_phases * num_phases) + num_phases * GAS + WAT] = -dKrg_dSg;
+			}
+		}
 	}
 
 	virtual void capPress (const int n,
