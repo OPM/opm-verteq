@@ -1,5 +1,6 @@
 #include <opm/verteq/upscale.hpp>
 #include <opm/verteq/utility/runlen.hpp>
+#include <cmath> // floor
 
 using namespace Opm;
 
@@ -118,4 +119,65 @@ VertEqUpscaler::eval (
 	// then we add the fractional value of just this block. it is just the
 	// last block that we want the fraction for
 	return before + (dpt[row] - before) * zeta.fraction ();
+}
+
+Elevation
+VertEqUpscaler::find (
+		int col,
+		const double* dpt,
+		const double target) const {
+
+	// use interpolation search to find the proper block for this
+	// (relative) depth. under the assumption that all individual
+	// heights are of approx. the same order, this should have time
+	// complexity O(log log N), with good locality. however, the
+	// constant factor is higher than a binary search due to the
+	// floating point arithmetic in computing the guess.
+
+	// we start searching from the first value; the top_hgt is the
+	// height at the *start* of the block (unlike what is stored in
+	// the up_bnd array)
+	int top_ndx = 0;
+	double top_val = 0.; // top_hgt <= target
+
+	// bottom of the searching scope. bot_hgt is the height of the
+	// *end* of the block, like what is in up_bnd
+	int bot_ndx = num_rows (col) - 1;
+	double bot_val = dpt[bot_ndx]; // target <=bot_val
+
+	// search until we have a solution; as the search space get tighter
+	// and tighter, we must eventually end up with a solution if the
+	// saturation was between 0. and 1 initially.
+	for (;;) {
+
+		// based on the fraction of the interval the target height is,
+		// guess at the index assuming that every block has equal height
+		const double frac = (target - top_val) / (bot_val - top_val);
+		const int cur_ndx = top_ndx + static_cast <int> (
+		                    std::floor ((bot_ndx - top_ndx + 1) * frac));
+
+		// get the brackets of this block; the weigted depth is the upper
+		// bound of the integral for each block. unfortunately we don't have
+		// lower bounds stored in an array, so we must have a conditional
+		const double cur_bot = dpt[cur_ndx];
+		const double cur_top = cur_ndx == 0 ? 0. : dpt[cur_ndx - 1];
+
+		// divide the search space into three: the current block, everything
+		// before and everything after. if we are in the current bracket,
+		// then return the result, otherwise search further in one of the
+		// two subspaces.
+		if (cur_bot < target) {
+			top_ndx = cur_ndx + 1;
+			top_val = cur_bot; // top_val still < target
+		}
+		else if (target < cur_top) {
+			bot_ndx = cur_ndx - 1;
+			bot_val = cur_top; // bot_val still > target
+		}
+		else {
+			// get the fraction of this block
+			const double cur_frac = (target - cur_top) / (cur_bot - cur_top);
+			return Elevation (cur_ndx, cur_frac);
+		}
+	}
 }

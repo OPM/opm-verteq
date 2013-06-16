@@ -160,6 +160,31 @@ struct VertEqUpscaler {
 	 */
 	double eval (int col, const double* dpt, const Elevation zeta) const;
 
+	/**
+	 * Find the elevation where an integrated property has a certain value.
+	 *
+	 * The method solves the equation
+	 *
+	 *     \int_{elevation}^{top} property dz = target
+	 *
+	 * with respect to elevation, where the dpt argument contains
+	 * precalculated values for the integral down to and including each
+	 * block in the column.
+	 *
+	 * @param col Index of the column to search, this is the coarse grid
+	 *            block number
+	 *
+	 * @param dpt Depth fractions weighted with a certain property.
+	 *            This should be calculated with wgt_dpt().
+	 *
+	 * @param target Value the integral from top down to the goal height
+	 *               should have.
+	 *
+	 * @return Elevation where the integral specified in dpt down to this
+	 *         point becomes the target.
+	 */
+	Elevation find (int col, const double* dpt, const double target) const;
+
 protected:
 	const TopSurf& ts;
 };

@@ -3,6 +3,7 @@
 #include <opm/verteq/props.hpp>
 #include <opm/verteq/topsurf.hpp>
 #include <opm/verteq/verteq.hpp>
+#include <opm/core/simulator/TwophaseState.hpp>
 #include <opm/core/utility/parameters/ParameterGroup.hpp>
 #include <memory>           // auto_ptr
 
@@ -18,6 +19,9 @@ struct VertEqImpl : public VertEq {
 	           const IncompPropertiesInterface& fullProps);
 	virtual const UnstructuredGrid& grid();
 	virtual const IncompPropertiesInterface& props();
+	virtual void upscale (const TwophaseState& fineScale,
+	                      TwophaseState& coarseScale);
+	virtual void notify (const TwophaseState& coarseScale);
 
 	auto_ptr <TopSurf> ts;
 	auto_ptr <VertEqProps> pr;
@@ -52,4 +56,25 @@ const IncompPropertiesInterface&
 VertEqImpl::props () {
 	// simply return the standard part of the grid
 	return *(pr.get ());
+}
+
+void
+VertEqImpl::upscale (const TwophaseState& fineScale,
+                     TwophaseState& coarseScale) {
+	// dimension state object to the top grid
+	coarseScale.init (*ts, pr->numPhases ());
+
+	// TODO: set the initial state from the fine-scale state
+
+	// update the properties from the initial state (the
+	// simulation object won't call this method before the
+	// first timestep; it assumes that the state is initialized
+	// accordingly (which is what we do here now)
+	notify (coarseScale);
+}
+
+void
+VertEqImpl::notify (const TwophaseState& coarseScale) {
+	// forward this request to the properties we have stored
+	pr->upd_res_sat (&coarseScale.saturation()[0]);
 }

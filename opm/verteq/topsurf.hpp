@@ -4,10 +4,6 @@
 // Copyright (C) 2013 Uni Research AS
 // This file is licensed under the GNU General Public License v3.0
 
-#ifndef BOOST_RANGE_ITERATOR_RANGE_INCLUDED
-#include <boost/range/iterator_range.hpp>
-#endif
-
 #ifndef OPM_GRID_HEADER_INCLUDED
 #include <opm/core/grid.h>
 #endif

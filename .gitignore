@@ -3,6 +3,7 @@
 .\#*
 \#*\#
 .\#*\#
+*.autosave
 
 # compiler output
 *.o

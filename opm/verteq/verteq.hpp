@@ -4,6 +4,8 @@
 // Copyright (C) 2013 Uni Research AS
 // This file is licensed under the GNU General Public License v3.0
 
+#include <string>
+
 #ifndef OPM_VERTEQ_VISIBILITY_HPP_INCLUDED
 #include <opm/verteq/visibility.hpp>
 #endif /* OPM_VERTEQ_VISIBILITY_HPP_INCLUDED */
@@ -14,6 +16,7 @@ struct UnstructuredGrid;
 namespace Opm {
 
 struct IncompPropertiesInterface;
+struct TwophaseState;
 
 namespace parameter {
 struct ParameterGroup;
@@ -89,6 +92,43 @@ public:
 	 *         object!
 	 */
 	virtual const IncompPropertiesInterface& props () = 0;
+
+	/**
+	 * Create an upscaled view of the domain state.
+	 *
+	 * This must be done in a separate method since the state is not
+	 * available at construction of the simulator. Prefer to use the
+	 * VertEqState object instead of calling this method yourself.
+	 *
+	 * @param fineScale    Initialized state for the fine-scale domain.
+	 *
+	 * @param coarseScale  Object that will receive the corresponding
+	 *                     state for the upscaled domain. This should
+	 *                     be a constructed object but where the init
+	 *                     method has not yet been called.
+	 *
+	 * @see VertEqState
+	 */
+	virtual void upscale (const TwophaseState& fineScale,
+	                      TwophaseState& coarseScale) = 0;
+
+	/**
+	 * Update the internal variables based on the state.
+	 *
+	 * Logically, the VE model is bound to a certain state because it
+	 * needs to know where the plume has been in order to get the
+	 * aggregate saturation correct.
+	 *
+	 * Prefer to use the VertEqState object instead of calling this
+	 * method yourself.
+	 *
+	 * @param coarseScale State of the upscaled domain. This should
+	 *                    have been initialized with the upscale
+	 *                    method.
+	 *
+	 * @see VertEqState, VertEq::upscale
+	 */
+	virtual void notify(const TwophaseState& coarseScale) = 0;
 };
 
 } // namespace Opm
