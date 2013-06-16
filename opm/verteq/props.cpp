@@ -60,7 +60,8 @@ struct VertEqPropsImpl : public VertEqProps {
 	// residual CO2. however, finding the interface is non-trivial and
 	// should only be done if we actually see a new maximum of the
 	// saturation. this array contains the trigger point for recalc.
-	vector <double> max_gas_sat;
+	vector <double> max_gas_sat;      // S_{g,max}
+	vector <Elevation> max_gas_elev;  // \zeta_R
 
 	virtual void upd_res_sat (const double* snap) {
 		// cache this here outside of the loop
@@ -78,11 +79,32 @@ struct VertEqPropsImpl : public VertEqProps {
 
 	void check_res_sat (int col, double cur_sat) {
 		if (cur_sat > max_gas_sat[col]) {
-			// TODO: recalculate discretized elevation
+			// recalculate discretized elevation
+			max_gas_elev[col] = res_elev (col, cur_sat);
 
 			// update stored saturation so we test correctly next time
 			max_gas_sat[col] = cur_sat;
 		}
+	}
+
+	/**
+	 * Find the elevation of the residual CO2 in this column based on the
+	 * maximum upscaled CO2 saturation.
+	 *
+	 * This is done by solving this equation for \zeta_R:
+	 *
+	 * H \Phi S_{g,max} = \int_{\zeta_R}^{\zeta_T} \phi (1 - s_{w,r}) dz
+	 *
+	 * using precalculated values for the integral.
+	 */
+	Elevation res_elev(const int col, const double max_sat) {
+		// right-hand side of the equation (apart from H, which is divided
+		// in the averaging operator stored)
+		const double max_vol = upscaled_poro[col] * max_sat;
+
+		// find the elevation which makes the integral have this value
+		const Elevation zeta_r = up.find (col, res_wat_dpt[col], max_vol);
+		return zeta_r;
 	}
 
 	VertEqPropsImpl (const IncompPropertiesInterface& fineProps,
@@ -99,7 +121,10 @@ struct VertEqPropsImpl : public VertEqProps {
 
 		// assume that there is no initial plume; first notification will
 		// trigger an update of all columns where there actually is CO2
-		, max_gas_sat (ts.number_of_cells, 0.) {
+		, max_gas_sat (ts.number_of_cells, 0.)
+
+		// this is the elevation that corresponds to no CO2 sat.
+		, max_gas_elev (ts.number_of_cells, Elevation (0, 0.)) {
 
 		// allocate memory to store results for faster lookup later
 		upscaled_poro.resize (ts.number_of_cells);
