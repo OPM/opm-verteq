@@ -163,6 +163,14 @@ struct VertEqPropsImpl : public VertEqProps {
 	RunLenData <double> prm_gas;      // K^{-1} k_|| k_{g,r} (1-s_{w,r})
 	RunLenData <double> prm_gas_int;  // 1/H \int_h^{\zeta_T} above dz
 
+	// weighted rel.perm. for residual part of brine
+	RunLenData <double> prm_res;      // K^{-1} k_|| 1 - k_{w,r} (s_{g,r})
+	RunLenData <double> prm_res_int;  // 1/H \int_h^{\zeta_T} above dz
+
+	// weighted rel.perm. for brine when residual CO2 is present
+	RunLenData <double> prm_wat;      // K^{-1} k_|| k_{w,r} (s_{g,r})
+	RunLenData <double> prm_wat_int;  // 1/H \int_h^{\zeta_T} above dz
+
 	VertEqPropsImpl (const IncompPropertiesInterface& fineProps,
 	                 const TopSurf& topSurf)
 		: fp (fineProps)
@@ -183,7 +191,11 @@ struct VertEqPropsImpl : public VertEqProps {
 		, max_gas_elev (ts.number_of_cells, Elevation (0, 0.))
 
 		, prm_gas (ts.number_of_cells, ts.col_cellpos)
-		, prm_gas_int (ts.number_of_cells, ts.col_cellpos) {
+		, prm_gas_int (ts.number_of_cells, ts.col_cellpos)
+		, prm_res (ts.number_of_cells, ts.col_cellpos)
+		, prm_res_int (ts.number_of_cells, ts.col_cellpos)
+		, prm_wat (ts.number_of_cells, ts.col_cellpos)
+		, prm_wat_int (ts.number_of_cells, ts.col_cellpos) {
 
 		// allocate memory to store results for faster lookup later
 		upscaled_poro.resize (ts.number_of_cells);
@@ -304,19 +316,29 @@ struct VertEqPropsImpl : public VertEqProps {
 
 			// cache the pointers here to avoid indexing in the loop
 			double* prm_gas_col = prm_gas[col];
+			double* prm_res_col = prm_res[col];
+			double* prm_wat_col = prm_wat[col];
 
 			for (int row = 0; row < up.num_rows (col); ++row) {
 				// rel.perm. for CO2 when having maximal sat. (only residual brine); this
 				// is the rel.perm. for the CO2 that is in the plume
 				const double kr_plume = gas_mob[row * num_phases + GAS];
 
+				// rel.perm. of brine, when residual CO2
+				const double kr_brine = wat_mob[row + num_phases + WAT];
+
 				// upscaled rel. perm. change for this block; we'll use this to weight
 				// the depth fractions when we integrate to get the upscaled rel. perm.
-				prm_gas_col[row] = lkl[row] / tot_lkl * kr_plume;
+				const double k_factor = lkl[row] / tot_lkl;
+				prm_gas_col[row] = k_factor * kr_plume;
+				prm_wat_col[row] = k_factor * kr_brine;
+				prm_res_col[row] = k_factor * (1 - kr_brine);
 			}
 
 			// integrate the derivate to get the upscaled rel. perm.
 			up.wgt_dpt (col, prm_gas_col, &prm_gas_int[col][0]);
+			up.wgt_dpt (col, prm_wat_col, &prm_wat_int[col][0]);
+			up.wgt_dpt (col, prm_res_col, &prm_res_int[col][0]);
 		}
 	}
 
