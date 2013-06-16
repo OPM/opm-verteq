@@ -107,6 +107,41 @@ struct VertEqPropsImpl : public VertEqProps {
 		return zeta_r;
 	}
 
+	/**
+	 * Find the elevation (as a table index) for the current interface
+	 * between the plume of CO2 and the brine layer below, given an
+	 * upscaled saturation of CO2 (which is correlated to the height)
+	 *
+	 * This is done by solving this equation for \zetaM:
+	 *
+	 * H \Phi S_g =    \int_{\zeta_R}^{\zeta_T} \phi s_{g,r} dz
+	 *               + \int_{\zeta_M}^{\zeta_T} \phi (1-s_{w,r}-s_{g,r} dz
+	 *
+	 * using precalculated values for the integrals, and a stored table
+	 * index for the extent of the
+	 *
+	 * This should be done *after* the maximum saturation is updated,
+	 * so we have \zeta_R^(t) and not \zeta_R^(t-1) (which may be higher
+	 * up than the current interface!)
+	 */
+	Elevation intf_elev (const int col, const double gas_sat) {
+		// check to make sure that the simulator updates the correct values
+		// this duplicates the efforts of the callback, but this is only called
+		// whenever we need the rel.perm.
+		check_res_sat (col, gas_sat);
+
+		// the first term is \Phi * S_g representing the volume of CO2, the
+		// second is the integral int_{\zeta_R}^{\zeta_T} \phi s_{g,r} dz,
+		// representing the volume of residual CO2; the remainder becomes
+		// the mobile CO2 volume
+		const double gas_vol = upscaled_poro[col] * gas_sat // \Phi * S_g
+		                     + up.eval (col, res_gas_dpt[col], max_gas_elev[col]);
+
+		// lookup to find the height that gives this mobile volume
+		const Elevation zeta_M = up.find (col, mob_mix_dpt[col], gas_vol);
+		return zeta_M;
+	}
+
 	VertEqPropsImpl (const IncompPropertiesInterface& fineProps,
 	                 const TopSurf& topSurf)
 		: fp (fineProps)
