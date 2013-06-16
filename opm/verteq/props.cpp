@@ -125,11 +125,11 @@ struct VertEqPropsImpl : public VertEqProps {
 	 * so we have \zeta_R^(t) and not \zeta_R^(t-1) (which may be higher
 	 * up than the current interface!)
 	 */
-	Elevation intf_elev (const int col, const double gas_sat) {
+	Elevation intf_elev (const int col, const double gas_sat) const {
 		// check to make sure that the simulator updates the correct values
 		// this duplicates the efforts of the callback, but this is only called
 		// whenever we need the rel.perm.
-		check_res_sat (col, gas_sat);
+		//check_res_sat (col, gas_sat);
 
 		// the first term is \Phi * S_g representing the volume of CO2, the
 		// second is the integral int_{\zeta_R}^{\zeta_T} \phi s_{g,r} dz,
