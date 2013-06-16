@@ -56,8 +56,33 @@ struct VertEqPropsImpl : public VertEqProps {
 	RunLenData <double> mob_mix_dpt; // int_{h}^{\zeta_T} \phi (1 - S_{w,r} - S_{n,r} dz
 	RunLenData <double> res_wat_dpt; // int_{h}^{\zeta_T} \phi (1 - S_{w,r}) dz
 
+	// we need to keep track of where the plume has been and deposited
+	// residual CO2. however, finding the interface is non-trivial and
+	// should only be done if we actually see a new maximum of the
+	// saturation. this array contains the trigger point for recalc.
+	vector <double> max_gas_sat;
+
 	virtual void upd_res_sat (const double* snap) {
-		// TODO:
+		// cache this here outside of the loop
+		const int num_phases = numPhases ();
+
+		// update saturation for each column
+		for (int col = 0; col < ts.number_of_cells; ++col) {
+			// current CO2 saturation
+			const double cur_sat = snap[col * num_phases + GAS];
+
+			// has it increased? is there more of the plume in this column?
+			check_res_sat (col, cur_sat);
+		}
+	}
+
+	void check_res_sat (int col, double cur_sat) {
+		if (cur_sat > max_gas_sat[col]) {
+			// TODO: recalculate discretized elevation
+
+			// update stored saturation so we test correctly next time
+			max_gas_sat[col] = cur_sat;
+		}
 	}
 
 	VertEqPropsImpl (const IncompPropertiesInterface& fineProps,
@@ -70,7 +95,11 @@ struct VertEqPropsImpl : public VertEqProps {
 		, res_wat_vol (ts.number_of_cells, ts.col_cellpos)
 		, res_gas_dpt (ts.number_of_cells, ts.col_cellpos)
 		, mob_mix_dpt (ts.number_of_cells, ts.col_cellpos)
-		, res_wat_dpt (ts.number_of_cells, ts.col_cellpos) {
+		, res_wat_dpt (ts.number_of_cells, ts.col_cellpos)
+
+		// assume that there is no initial plume; first notification will
+		// trigger an update of all columns where there actually is CO2
+		, max_gas_sat (ts.number_of_cells, 0.) {
 
 		// allocate memory to store results for faster lookup later
 		upscaled_poro.resize (ts.number_of_cells);
