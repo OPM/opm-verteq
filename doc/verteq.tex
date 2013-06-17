@@ -3,21 +3,45 @@
 % --- packages ---
 \usepackage{amsmath}
 \usepackage{amssymb}
+\usepackage{calc}
+\usepackage{enumitem}
+\usepackage{listings}
 \usepackage{mathtools}
 \usepackage{refstyle}
 \usepackage{stix}
 \usepackage{varioref}
 \usepackage{xspace}
 
+% see http://tex.stackexchange.com/a/23705/12997
+\setlist[description,1]{labelindent=\parindent,leftmargin=!}
+\lstloadlanguages{Matlab}
+\lstset{basicstyle=\ttfamily}
+
 % --- macros ---
 % enable use of equations both inline and in equations
 \newcommand{\mth}[1]{\ensuremath{#1}\xspace}
+\newcommand{\wid}[1]{\widthof{\bfseries {#1} \hspace{\labelsep}}}
 \newcommand{\COO}{\mth{\mathrm{CO}_2}}
+\newcommand{\MRST}{{\tt MRST}}
+\newcommand{\OPM}{{\tt OPM}}
+
+% spacing around function argument parenthesis
+% (see http://tex.stackexchange.com/a/2610/12997 and
+%      http://tex.stackexchange.com/questions/45218 )
+\newcommand{\aleft}{\mathopen{}\mathclose\bgroup\left}  % (
+\newcommand{\aright}{\aftergroup\egroup\right}          % )
+\newcommand{\binop}[3]{#1\mkern1mu{#2}\mkern1mu #3}     % x - y
+\newcommand{\dual}[1]{\binop{1}{-}{#1}}                 % 1 - x
+\newcommand{\ddual}[2]{\binop{\binop{1}{-}{#1}}{-}{#2}} % 1 - x - y
+\newcommand{\at}[2]{\left[ #1 \right]_{#2}}             % f (x)
 
 % --- notation ---
 \newcommand{\der}[2]{\frac{\partial{#1}}{\partial{#2}}}       % derivative
 \newcommand{\dvg}[1]{\nabla\cdot{#1}}                         % divergence
 \newcommand{\intg}[4]{\int_{#1}^{#2}\!{#3}\,\mathrm{d}{#4}}   % integral
+\newcommand{\inv}[1]{{#1}^{-1}}                               % inverse
+\newcommand{\latr}[1]{{#1}_{\|}}                              % lateral
+\newcommand{\magn}[1]{{#1}_|}                                 % magnitude
 
 % --- nomenclature ---
 \newcommand{\Hei}{H}        % total height
@@ -26,7 +50,13 @@
 \newcommand{\por}{\phi}     % porosity (fine)
 \newcommand{\Sat}{S}        % saturation (coarse)
 \newcommand{\sat}{s}        % saturation (fine)
+\newcommand{\sr}[1]{\sat_{#1,r}}    % residual saturation
+\newcommand{\Prm}{K}        % abs. perm. (coarse)
+\newcommand{\prm}{k}        % abs. perm. (fine)
+\newcommand{\Rlp}[1]{K_{r,#1}}  % rel. perm. (coarse)
+\newcommand{\rlp}[1]{k_{r,#1}}  % rel. perm. (fine)
 \newcommand{\tim}{t}        % time
+\newcommand{\ttt}{\tau}     % alt. time (var.)
 \newcommand{\Vel}{U}        % velocity
 \newcommand{\phs}{\alpha}   % generic phase
 \newcommand{\Lev}{\zeta}    % level
@@ -40,19 +70,36 @@
 \newcommand{\res}{r}        % residual
 \newcommand{\x}{x}
 \newcommand{\y}{y}
+\newcommand{\z}{z}
+\newcommand{\avg}[2]{\mathcal{A}\aleft[#1, #2\aright]}  % averaging operator
+\newcommand{\f}{f}          % generic function
+\newcommand{\h}{h}          % height argument (to operator)
+\newcommand{\krnwr}{c}      % rel. perm. for co2 when residual brine
+\newcommand{\krwnr}{b}      % rel. perm. for brine when residual co2
 
 % --- shortcuts ---
 \newcommand{\Satp}{\Sat_\phs}
 \newcommand{\satp}{\sat_\phs}
+\newcommand{\Satn}{\Sat_\nap}
+\newcommand{\satn}{\sat_\nap}
+\newcommand{\Satnmax}{\Sat_{\nap,\max}} % sat. when plume is largest
+\newcommand{\snr}{\sr{\nap}}    % residual gas sat.
+\newcommand{\swr}{\sr{\wet}}    % residual brine sat.
 \newcommand{\Velp}{\Vel_\phs}
 \newcommand{\LevT}{\Lev_\Top}
 \newcommand{\LevB}{\Lev_\Bot}
 \newcommand{\LevM}{\Lev_\Mob}
 \newcommand{\LevR}{\Lev_\Res}
-\newcommand{\hphs}{\hei_\phs}
-\newcommand{\hnap}{\hei_\nap}
-\newcommand{\hres}{\hei_\res}
-\newcommand{\hwet}{\hei_\wet}
+\newcommand{\hnap}{\hei_\nap}           % current extent of plume at loc.
+\newcommand{\hnmax}{\hei_{\nap,\max}}   % maximum extent of plume at loc.
+\newcommand{\Rlpp}{\Rlp{\phs}}  % generic rel. perm.
+\newcommand{\rlpp}{\rlp{\phs}}
+\newcommand{\Rlpn}{\Rlp{\nap}}  % gas rel. perm.
+\newcommand{\rlpn}{\rlp{\nap}}
+\newcommand{\Rlpw}{\Rlp{\wet}}  % brine rel. perm.
+\newcommand{\rlpw}{\rlp{\wet}}
+\newcommand{\Absprm}{\Prm}          % upscaled abs. perm. used in rel. perm. calc.
+\newcommand{\absprm}{\latr{\prm}}   % abs. perm. used in rel. perm. calc.
 
 \begin{document}
 We assume that we have two phases, \COO and brine:
@@ -60,30 +107,22 @@ We assume that we have two phases, \COO and brine:
 \phs = \left\{ \nap, \wet \right\}
 \end{equation}
 
-\begin{tabular}{lll}
-\( \Hei  \) & = Total height of reservoir & = \( \Hei \left( \x, \y \right)        \) \\
-\( \hnap \) & = Height of \COO plume      & = \( \hnap \left( \x, \y, \tim \right) \) \\
-\( \hres \) & = Height of residual region & = \( \hres \left( \x, \y, \tim \right) \) \\
-\( \hwet \) & = Height of brine region    & = \( \hwet \left( \x, \y, \tim \right) \) \\
-\end{tabular}
-
-\begin{equation}
-\hnap + \hres + \hwet = \Hei, \qquad \qquad \hphs \geq 0
-\end{equation}
-
-\begin{quote}
-\begin{description}
-\item[\( \LevT \)] \(=\) Level of top of the reservoir
-\item[\( \LevB \)] \(=\) Level of the bottom of the reservoir
-\item[\( \LevM \)] \(=\) Level of intersection between \COO and residual region
-\item[\( \LevR \)] \(=\) Level of intersection between residual region and brine
+\begin{description}[labelwidth=\wid{\( \LevM \)}]
+\item[ \( \LevT \) ] \(=\) Level of top of the reservoir
+\item[ \( \LevB \) ] \(=\) Level of the bottom of the reservoir
+\item[ \( \LevM \) ] \(=\) Level of intersection between \COO and residual region \item[ \( \LevR \) ] \(=\) Level of intersection between residual region and brine
+\item[ \( \Hei  \) ] \(=\) Total height of reservoir \(= \LevT - \LevB \)
 \end{description}
-\end{quote}
 
 \begin{equation}
 \LevB \leq \LevR \leq \LevM \leq \LevT
 \end{equation}
 
+Also the following temporal relation:
+
+\begin{equation}
+\LevR \aleft( \tim \aright) = \min \LevM \aleft( \ttt \aright), \qquad 0 \leq \ttt < \tim
+\end{equation}
 
 For each of these phases, we will evolve a conservation equation for immiscible flow:
 \begin{gather}
@@ -93,6 +132,297 @@ For each of these phases, we will evolve a conservation equation for immiscible 
 \eqlabel{verteq:incompressible}
 \dvg{ \sum_{\phs} { \Velp } } = 0
 \intertext{where}
-\Hei \Por \Satp = \intg{ \LevT }{ \LevB }{ \por \satp }{ \dph }
+\Hei \Por \Satp = \intg{ \LevB }{ \LevT }{ \por \satp }{ \dph }
 \end{gather}
+
+\section{Upscaled quantities}
+\subsection{Operators}
+We have the ``lateral'' operator~\( \latr{ \hspace{ 0ex } } \):
+
+\begin{equation}
+\latr{ \prm } = \begin{pmatrix}
+\prm_{\x\x} & \prm_{\x\y} \\
+\prm_{\x\y} & \prm_{\y\y}
+\end{pmatrix}, \qquad \mathrm{where\ }
+\prm = \begin{pmatrix}
+\prm_{\x\x} & \prm_{\x\y} & \prm_{\x\z} \\
+\prm_{\x\y} & \prm_{\y\y} & \prm_{\y\z} \\
+\prm_{\x\z} & \prm_{\y\z} & \prm_{\z\z}
+\end{pmatrix}
+\end{equation}
+
+and to get the magnitude of such a lateral tensor, we select the Frobenius norm as operator~\( \magn{ \hspace{ 0ex } } \):
+
+\begin{equation}
+\magn{ \prm } = \| \latr{ \prm } \|_F = \sqrt{ \prm_{\x\x}^2 + 2\prm_{\x\y}^2 + \prm_{\y\y}^2 }
+\end{equation}
+
+We have the depth-averaging operator:
+
+\begin{equation}
+\avg{ \f }{ \h } = \frac{ 1 }{ \Hei } \intg{ \h }{ \LevT }{ \f \aleft( \dph \aright) }{ \dph }
+\end{equation}
+
+and its derivative:
+
+\begin{equation}
+\der{ \avg{ \f }{ \h } }{ \h } = - \frac{ 1 }{ \Hei } \f \aleft( \h \aright)
+\end{equation}
+
+We also use the notation:
+
+\begin{equation}
+\at{ \f }{ \h } \equiv \f \aleft( \h \aright)
+\end{equation}
+
+when \( \f \) is a composite expression.
+
+\subsection{Porosity}
+Porosity is depth-averaged over the column:
+
+\begin{align}
+\Hei \Por &= \intg{ \LevB }{ \LevT }{ \por }{ \dph } \\
+\Por &= \avg{ \por }{ \LevB }
+\end{align}
+
+\subsection{Absolute Permeability}
+\begin{align}
+\Hei \Prm &= \intg{ \LevB }{ \LevT }{ \latr{ \prm } }{ \dph } \\
+\Prm &= \avg{ \latr{ \prm } }{ \LevB }
+\end{align}
+
+\subsection{Saturation}
+We'll be making the following assumption:
+
+\begin{equation}
+\satn =
+\begin{cases}
+0        & \Leftarrow \LevB \leq \dph < \LevR \\
+\snr     & \Leftarrow \LevR \leq \dph < \LevM \\
+\dual{ \swr } & \Leftarrow \LevM \leq \dph < \LevT
+\end{cases}
+\end{equation}
+
+and make use of the depth-averaging operator on these quantities:
+
+\begin{description}[labelwidth=\wid{\( \por \left( \ddual{ \swr }{ \snr } \right) \)}]
+\item[ \( \por \left( \snr \right) \) ] Fraction of volume in each block filled with residual gas
+\item[ \( \por \left( \ddual{ \swr }{ \snr } \right) \) ] Fraction of volume in each block filled with mobile fluid
+\item[ \( \por \left( \dual{ \swr } \right) \) ] Fraction of volume in each block filled with residual brine
+\end{description}
+
+leading to the interpretations:
+
+\begin{description}[labelwidth=\wid{\( \avg{ \por \left( \ddual{ \swr }{ \snr } \right) }{ \h } \)}]
+\item[ \( \avg{ \por \left( \snr \right) }{ \h } \) ] Fraction of the column, up to \( \h \), filled with residual gas
+\item[ \( \avg{ \por \left( \ddual{ \swr }{ \snr } \right) }{ \h } \) ] Fraction of the column, up to \( \h \), filled with mobile fluid
+\item[ \( \avg{ \por \left( \dual{ \swr } \right) }{ \h } \) ] Fraction of the column, up to \( \h \), filled with residual brine
+\end{description}
+
+When the plume is at its largest \( \LevM = \LevR \), we have:
+
+\begin{align}
+\Hei \Por \Satnmax &= \intg{ \LevR }{ \LevT }{ \por \left( \dual{ \swr } \right) }{ \dph } \\
+\eqlabel{ve:res-eq}
+\Por \Satnmax &= \avg{ \por \left( \dual{ \swr } \right) }{ \LevR }
+\end{align}
+
+\begin{align}
+\Hei \Por \Satn &= \intg{ \LevB }{ \LevT }{ \por \satn }{ \dph } \\
+&= \intg{ \LevB }{ \LevR }{ \por \cdot 0 }{ \dph } + \intg{ \LevR }{ \LevM }{ \por \snr }{ \dph } + \intg{ \LevM }{ \LevT }{ \por \left( \dual{ \swr } \right) }{ \dph } \\
+&= \intg{ \LevR }{ \LevT }{ \por \snr }{ \dph } - \intg{ \LevM }{ \LevT }{ \por \snr }{ \dph } + \intg{ \LevM }{ \LevT }{ \por \left( \dual{ \swr } \right) }{ \dph } \\
+&= \intg{ \LevR }{ \LevT }{ \por \snr }{ \dph } + \intg{ \LevM }{ \LevT }{ \por \left( \ddual{ \swr }{ \snr } \right) }{ \dph }
+\end{align}
+
+\begin{align}
+\Por \Satn - \avg{ \por \snr }{ \LevR } &= \avg{ \por \left( \ddual{ \swr }{ \snr } \right) }{ \LevM }
+\end{align}
+
+Given that \( \LevR \) is known, we can solve the above equation to find \( \LevM \). (What if \( \LevM \aleft( \tim \aright) < \LevR \aleft( \tim - 1 \aright) \)?)
+
+We know that:
+
+\begin{equation}
+\Por \der{ \Satn }{ \LevM } = \der{ \avg{ \por \left( \ddual{ \swr }{ \snr } \right) }{ \LevM } }{ \LevM } = - \frac{ \at{ \por \left( \ddual{ \swr }{ \snr } \right) }{ \LevM } }{ \Hei }
+\end{equation}
+
+\subsection{Allowable Range}
+
+Since the upscaled saturation is now an expression for height, we have:
+
+\begin{equation}
+0 \leq \Satn \leq 1
+\end{equation}
+
+\subsection{Relative Permeability}
+\begin{equation}
+\Hei \Prm \Rlpp = \intg{ \LevB }{ \LevT }{ \latr{ \prm } \rlpp }{ \dph }
+\end{equation}
+
+Notice that the argument of the rel.perm. function on the right-hand side is not the same as the argument of the operator of the function on the left-hand side.
+
+Instead of evaluating the fine-scale rel.perm. function, we'll make the following assumption:
+
+\begin{align}
+\rlpn \aleft( \satn \aright) &=
+\begin{cases}
+\rlpn \aleft( 0 \aright) = 0 & \Leftarrow \LevB \leq \dph < \LevR \\
+\rlpn \aleft( \snr \aright) = 0 & \Leftarrow \LevR \leq \dph < \LevM \\
+\rlpn \aleft( \dual{\swr} \aright) = \krnwr & \Leftarrow \LevM \leq \dph < \LevT
+\end{cases}
+\end{align}
+
+yielding:
+
+\begin{align}
+\Hei \Absprm \Rlpn &= \intg{ \LevB }{ \LevR }{ \absprm \cdot 0 }{ \dph } + \intg{ \LevR }{ \LevM }{ \absprm \cdot 0 }{ \dph } + \intg{ \LevM }{ \LevT }{ \absprm \cdot \krnwr }{ \dph } \\
+\Rlpn \aleft( \Satn \aright) &= \inv{ \Absprm } \avg{ \absprm \cdot \krnwr }{ \LevM }
+\end{align}
+
+with the derivative:
+
+\begin{align}
+\der{ \Rlpn \aleft( \Satn \aright) }{ \Satn } &= \inv{ \Absprm } \der{ \avg{ \absprm \cdot \krnwr }{ \LevM } }{ \LevM } \der{ \LevM }{ \Satn } \\
+&= \inv{ \Absprm } \frac{ \at{ \absprm \cdot \krnwr }{ \LevM }}{ \Hei } \frac{ \Hei \Por }{ \at{ \por \left( \ddual{ \swr }{ \snr } \right) }{ \LevM }} \\
+&= \Por \inv{ \Absprm } \at{ \frac{ \absprm \cdot \krnwr }{ \por \left( \ddual{ \swr }{ \snr } \right) } }{ \LevM }
+\end{align}
+
+And then for brine:
+
+\begin{align}
+\rlpw \aleft( \satn \aright) &=
+\begin{cases}
+\rlpn \aleft( 0 \aright) = 1 & \Leftarrow \LevB \leq \dph < \LevR \\
+\rlpw \aleft( \snr \aright) = \krwnr & \Leftarrow \LevR \leq \dph < \LevM \\
+\rlpw \aleft( \dual{ \swr } \aright) = 0 & \Leftarrow \LevM \leq \dph < \LevT
+\end{cases}
+\end{align}
+
+subsequently:
+
+\begin{align}
+\Hei \Absprm \Rlpw &= \intg{ \LevB }{ \LevR }{ \absprm \cdot 1 }{ \dph } + \intg{ \LevR }{ \LevM }{ \absprm \cdot \krwnr }{ \dph } + \intg{ \LevM }{ \LevT }{ \absprm \cdot 0 }{ \dph } \\
+&= \intg{ \LevB }{ \LevT }{ \absprm }{ \dph } - \intg{ \LevR }{ \LevT }{ \absprm }{ \dph } + \intg{ \LevR }{ \LevT }{ \absprm \cdot \krwnr }{ \dph } - \intg{ \LevM }{ \LevT }{ \absprm \cdot \krwnr }{ \dph } \\
+\Rlpw \aleft( \Satn \aright) &= \inv{ \Absprm } \left( \avg{ \absprm }{ \LevB } - \avg{ \absprm \cdot \left( \dual{ \krwnr } \right) }{ \LevR } - \avg{ \absprm \cdot \krwnr }{ \LevM } \right) \\
+&= I - \inv{ \Absprm } \left( \avg{ \absprm \cdot \left( \dual{ \krwnr } \right) }{ \LevR } + \avg{ \absprm \cdot \krwnr }{ \LevM } \right)
+\end{align}
+
+with
+
+\begin{align}
+\der{ \Rlpw \aleft( \Satn \aright) }{ \Satn } &= - \inv{ \Absprm } \der{ \avg{ \absprm \cdot \krwnr }{ \LevM } }{ \LevM } \der{ \LevM }{ \Satn } \\
+&= - \Por \inv{ \Absprm } \frac{ \absprm \cdot \krwnr }{ \por \left( \ddual{ \swr }{ \snr } \right) }
+\end{align}
+
+Thus, we have the interpretation of the values
+
+\begin{description}[labelwidth=\wid{\( \krnwr \)}]
+\item[ \( \krwnr \) ] Maximum mobility of brine when \COO is present
+\item[ \( \krnwr \) ] Maximum mobility of \COO when brine is present (always)
+\end{description}
+
+Notice that the relative permeabilities are now tensors, since they are weighted sums of other tensors. However, simulation code usually expects a scalar for this. We work around this by creating a scalar that tells us something about the magnitude of permeability We therefore substitute \( \latr{ \prm } \) with \( \magn{ \prm } \).
+
+\subsection{Implementation}
+
+We use the following variable names for expressions, in \OPM:
+
+\begin{description}[labelwidth=\wid{\( \intg{ \h }{ \LevM }{ \por \left( \ddual{ \swr }{ \snr } \right) }{ \dph } \)}]
+\item[ \( \rlpn \aleft( \dual{\swr} \aright) = \krnwr \) ] \lstinline[language=C++]!gas_mob[GAS]!
+\item[ \( \rlpw \aleft( \snr \aright) = \krwnr \) ] \lstinline[language=C++]!wat_mob[WAT]!
+\item[ \( \por \snr \) ] \lstinline[language=C++]!res_gas_vol!
+\item[ \( \por \left( \ddual{ \swr }{ \snr } \right) \) ] \lstinline[language=C++]!mob_mix_vol!
+\item[ \( \por \left( \dual{ \swr } \right) \) ] \lstinline[language=C++]!res_wat_vol!
+\item[ \( \intg{ \h }{ \LevM }{ \por \snr }{ \dph } \) ] \lstinline[language=C++]!res_gas_dpt!
+\item[ \( \intg{ \h }{ \LevM }{ \por \left( \ddual{ \swr }{ \snr } \right) }{ \dph } \) ] \lstinline[language=C++]!mob_mix_dpt!
+\item[ \( \intg{ \h }{ \LevM }{ \por \left( \dual{ \swr } \right) }{ \dph } \) ] \lstinline[language=C++]!res_wat_dpt!
+\item[ \( \magn{ \prm } \) ] \lstinline[language=C++]!lkl!
+\item[ \( \inv{ \Prm } \) ] \lstinline[language=C++]!1/tot_lkl!
+\item[ \( \inv{ \Prm } \latr{ \prm } \cdot \left( \dual{ \krwnr } \right) \) ] \lstinline[language=C++]!prm_wat!
+\item[ \( \inv{ \Prm } \intg{ \h }{ \LevM }{ \latr{ \prm } \cdot \left( \dual{ \krwnr } \right) }{ \dph } \) ] \lstinline[language=C++]!prm_wat_int!
+\item[ \( \inv{ \Prm } \latr{ \prm } \cdot \krwnr \) ] \lstinline[language=C++]!prm_res!
+\item[ \( \inv{ \Prm } \intg{ \h }{ \LevM }{ \latr{ \prm } \cdot \krwnr }{ \dph } \) ] \lstinline[language=C++]!prm_res_int!
+\item[ \( \inv{ \Prm } \latr{ \prm } \cdot \krnwr \) ] \lstinline[language=C++]!prm_gas!
+\item[ \( \inv{ \Prm } \intg{ \h }{ \LevM }{ \latr{ \prm } \cdot \krnwr }{ \dph } \) ] \lstinline[language=C++]!prm_gas_int!
+\end{description}
+
+\subsection{Simplification}
+
+Notice the special case:
+
+\begin{align}
+\avg{ 1 }{ \h } = \frac{ \LevT - \h }{ \Hei } & & \mathrm{ and } & & \der{ \avg{ 1 }{ \h } }{ \h } = - \frac{ 1 }{ \Hei }
+\end{align}
+
+Instead of levels, we operate directly on heights:
+
+\begin{description}[labelwidth=\wid{\( \hnmax \)}]
+\item[ \( \hnap \) ] = Height of \COO plume = \( \LevT - \LevM \)
+\item[ \( \hnmax \) ] = Height of plume \emph{and} residual region = \( \LevT - \LevR \)
+\end{description}
+
+If we assume that we have a homogeneous layer where:
+
+\begin{align}
+\der{ \por }{ \dph } &= 0 \\
+\der{ \prm }{ \dph } &= 0 \\
+\der{ \rlpp }{ \dph } &= 0
+\end{align}
+
+we get
+
+\begin{align}
+\Por \prime &= \avg{ 1 }{ \LevB } = 1 \\
+\Absprm \prime &= \avg{ 1 }{ \LevB } = 1
+\end{align}
+
+The relation~\eqref[vref]{ve:res-eq} between the maximum upscaled gas saturation and the maximum plume height becomes:
+
+\begin{align}
+\Satnmax \prime &= \frac{ \left( \dual{ \swr } \right) \cdot \left( \LevT - \LevR \right) }{ \Hei } \\
+&= \frac{ \left( \dual{ \swr } \right) \hnmax }{ \Hei } \\
+\hnmax &= \frac{ \Hei \Satnmax \prime }{ \dual{ \swr } }
+\end{align}
+
+This is ``\lstinline[language=Matlab]!s_max*H=h_max*(1-sr(2))!'' in \MRST.
+
+The equation to be solved to find the interface now becomes:
+
+\begin{align}
+\Satn \prime - \avg{ \snr }{ \LevR } &= \avg{ \ddual{ \swr }{ \snr } }{ \LevM } \\
+\Satn \prime - \frac{ \snr \hnmax }{ \Hei } &= \frac{ \left( \ddual{ \swr }{ \snr } \right) \hnap }{ \Hei }
+\end{align}
+
+with
+
+\begin{align}
+\der{ \Satn \prime }{ \hnap } &= \frac{ \ddual{ \swr }{ \snr } }{ \Hei }
+\end{align}
+
+In \MRST we have \lstinline[language=Matlab]!dh=bsxfun(@rdivide,opt.H,1-opt.sr(2)-opt.sr(1))!, so this is \lstinline[language=Matlab]!1/dh!.
+
+We solve the equation to find \( \hnap \):
+\begin{align}
+\hnap &= \frac{ \Hei \Satn \prime - \snr \hnmax }{ \ddual{ \swr }{ \snr } } \\
+&= \frac{ \Hei \Satn \prime - \frac{ \snr \Hei \Satnmax \prime }{ \dual{ \snr } } }{ \ddual{ \swr }{ \snr } } \\
+&= \frac{ \Hei }{ \ddual{ \swr }{ \snr } } \left( \Satn \prime - \frac{ \snr }{ \dual{ \snr } } \Satnmax \prime \right)
+\end{align}
+
+This is ``\lstinline[language=Matlab]!s*H=h*(1-sr(2))+(h_max-h)*sr(1)!'' in \MRST.
+
+Thus
+
+\begin{align}
+\Rlpn \prime &= \avg{ \krnwr }{ \LevM } \\
+\der{ \Rlpn \prime }{ \Satn } &= \at{ \frac{ \krnwr }{ \ddual{ \swr }{ \snr } } }{ \LevM }
+\end{align}
+
+which is represented by \lstinline[language=Matlab]!bsxfun(@rdivide,dh*opt.kwm(1),g_top.H)! (there is implicitly a \lstinline[language=Matlab]!H! in \lstinline[language=Matlab]!dh!) in \MRST.
+
+And
+
+\begin{align}
+\Rlpw \prime &= 1 - \avg{ \dual{ \krwnr } }{ \LevR } - \avg{ \krwnr }{ \LevM } \\
+\der{ \Rlpw \prime }{ \Satn } &= - \frac{ \krwnr }{ \ddual{ \swr }{ \snr } }
+\end{align}
 \end{document}
