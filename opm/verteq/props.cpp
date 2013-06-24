@@ -171,8 +171,12 @@ struct VertEqPropsImpl : public VertEqProps {
 	RunLenData <double> prm_wat;      // K^{-1} k_|| k_{w,r} (s_{g,r})
 	RunLenData <double> prm_wat_int;  // 1/H \int_h^{\zeta_T} above dz
 
+	// gravity in the z-direction; \nabla z \cdot \mathbf{g}
+	const double gravity;
+
 	VertEqPropsImpl (const IncompPropertiesInterface& fineProps,
-	                 const TopSurf& topSurf)
+	                 const TopSurf& topSurf,
+	                 const double* grav_vec)
 		: fp (fineProps)
 		, ts (topSurf)
 		, up (ts)
@@ -195,7 +199,8 @@ struct VertEqPropsImpl : public VertEqProps {
 		, prm_res (ts.number_of_cells, ts.col_cellpos)
 		, prm_res_int (ts.number_of_cells, ts.col_cellpos)
 		, prm_wat (ts.number_of_cells, ts.col_cellpos)
-		, prm_wat_int (ts.number_of_cells, ts.col_cellpos) {
+		, prm_wat_int (ts.number_of_cells, ts.col_cellpos)
+		, gravity (grav_vec[THREE_DIMS - 1])	{
 
 		// allocate memory to store results for faster lookup later
 		upscaled_poro.resize (ts.number_of_cells);
@@ -471,9 +476,12 @@ struct VertEqPropsImpl : public VertEqProps {
 
 VertEqProps*
 VertEqProps::create (const IncompPropertiesInterface& fineProps,
-                     const TopSurf& topSurf) {
+                     const TopSurf& topSurf,
+                     const double* grav_vec) {
 	// construct real object which contains all the implementation details
-	auto_ptr <VertEqProps> props (new VertEqPropsImpl (fineProps, topSurf));
+	auto_ptr <VertEqProps> props (new VertEqPropsImpl (fineProps,
+	                                                   topSurf,
+	                                                   grav_vec));
 
 	// client owns pointer to constructed fluid object from this point
 	return props.release ();

@@ -31,7 +31,8 @@ VertEqWrapper <Simulator>::VertEqWrapper (
 	ve = VertEq::create ("",
 	                     param,
 	                     grid,
-	                     props);
+	                     props,
+	                     gravity);
 
 	// pass arguments to the underlaying simulator
 	sim = new Simulator (param,

@@ -23,11 +23,15 @@ struct VertEqProps : public IncompPropertiesInterface {
 	 *
 	 * @param fineProps Fluid and rock properties for the fine grid.
 	 * @param topSurf Grid for which the properties should be upscaled.
+	 * @param gravity Gravity vector (three-dimensional); must contain
+	 *                three elements, whereas the last is for depth.
+	 *                Usually this is {0., 0., Opm::unit::gravity}.
 	 * @return Fluid object for the corresponding coarse grid. The caller
 	 * has the responsibility to dispose off the object returned from here.
 	 */
 	static VertEqProps* create (const IncompPropertiesInterface& fineProps,
-	                            const TopSurf& topSurf);
+	                            const TopSurf& topSurf,
+	                            const double* gravity);
 
 	/**
 	 * Update residual saturation of CO2 through-out the domain.
