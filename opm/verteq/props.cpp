@@ -457,7 +457,20 @@ struct VertEqPropsImpl : public VertEqProps {
 	                       const int *cells,
 	                       double *pc,
 	                       double *dpcds) const {
-		throw OPM_EXC ("Not implemented yet");
+		// cache this on the outside of the loop
+		const int num_phases = numPhases();
+
+		// process each column/cell individually
+		for (int i = 0; i < n; ++i) {
+			// index (into the upscaled grid) of the column
+			const int col = cells[i];
+
+			// get the (upscaled) CO2 saturation
+			const double Sg = s[i * num_phases + GAS];
+
+			// get the block number that contains the active interface
+			const Elevation intf = intf_elev (col, Sg); // zeta_M
+		}
 	}
 
 	virtual void satRange (const int n,
