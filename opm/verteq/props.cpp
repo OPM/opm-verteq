@@ -457,8 +457,16 @@ struct VertEqPropsImpl : public VertEqProps {
 	                       const int *cells,
 	                       double *pc,
 	                       double *dpcds) const {
-		// cache this on the outside of the loop
+		// cache this on the outside of the loop; the phase properties
+		// are the same in every block
 		const int num_phases = numPhases();
+		const double dens_gas = density ()[GAS];
+		const double dens_wat = density ()[WAT];
+		const double dens_diff = dens_gas - dens_wat;
+
+		// wrappers to make sure that we can access this matrix without
+		// doing index calculations ourselves
+		const rlw_double ts_h (ts.number_of_cells, ts.col_cellpos, ts.h);
 
 		// process each column/cell individually
 		for (int i = 0; i < n; ++i) {
@@ -470,6 +478,24 @@ struct VertEqPropsImpl : public VertEqProps {
 
 			// get the block number that contains the active interface
 			const Elevation intf = intf_elev (col, Sg); // zeta_M
+
+			// heights from top surface to the interface, and to bottom
+			const double intf_hgt = up.eval (col, ts_h[col], intf); // \zeta_T - \zeta_M
+			const double botm_hgt = ts.h_tot[col]; // \zeta_T - \zeta_B
+
+			// the slopes of the pressure curves are different. the distance
+			// between them (at the top for instance) is dependent on where
+			// they intersect (i.e. at the interface between the phases). in
+			// addition, the brine pressure is measured at the bottom, so we
+			// must also add the total height to get down there
+			const double hyd_diff = -gravity * (intf_hgt * dens_diff + botm_hgt * dens_wat);
+
+			// total capillary pressure
+			const double cap_pres = hyd_diff;
+
+			// assign to output
+			pc[i * num_phases + GAS] =  cap_pres;
+			pc[i * num_phases + WAT] = -cap_pres;
 		}
 	}
 
