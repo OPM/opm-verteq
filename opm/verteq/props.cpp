@@ -463,6 +463,7 @@ struct VertEqPropsImpl : public VertEqProps {
 		// wrappers to make sure that we can access this matrix without
 		// doing index calculations ourselves
 		const rlw_double ts_h (ts.number_of_cells, ts.col_cellpos, ts.h);
+		const rlw_int col_cells (ts.number_of_cells, ts.col_cellpos, ts.col_cells);
 
 		// process each column/cell individually
 		for (int i = 0; i < n; ++i) {
@@ -486,8 +487,27 @@ struct VertEqPropsImpl : public VertEqProps {
 			// must also add the total height to get down there
 			const double hyd_diff = -gravity * (intf_hgt * dens_diff + botm_hgt * dens_wat);
 
-			// total capillary pressure
-			const double cap_pres = hyd_diff;
+			// find the fine-scale element that holds the interface; we already
+			// know the relative index in the column; ask the top surface for
+			// global identity
+			const int glob_id = col_cells[col][intf.block()];
+
+			// find the entry pressure in this block. this code could
+			// be optimized so it only called the capillary pressure
+			// function for the fine-scale properties once instead of
+			// inside the loop, but that would require us to allocate
+			// arrays to hold all input and output, instead of just using
+			// local variables. BTW; why the number of outputs?
+			double fine_sat[NUM_PHASES];
+			double fine_pc[NUM_PHASES];               // entry pressures
+			double fine_dpc[NUM_PHASES * NUM_PHASES]; // derivatives
+			fine_sat[GAS] = intf.fraction ();
+			fine_sat[WAT] = 1 - fine_sat[GAS];
+			fp.capPress (1, fine_sat, &glob_id, fine_pc, fine_dpc);
+
+			// total capillary pressure. the fine scale entry pressure is
+			// a wedge between the slopes of the hydrostatic pressures.
+			const double cap_pres = fine_pc[GAS] + hyd_diff;
 
 			// assign to output
 			pc[i * NUM_PHASES + GAS] =  cap_pres;
