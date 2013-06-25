@@ -463,6 +463,7 @@ struct VertEqPropsImpl : public VertEqProps {
 		// wrappers to make sure that we can access this matrix without
 		// doing index calculations ourselves
 		const rlw_double ts_h (ts.number_of_cells, ts.col_cellpos, ts.h);
+		const rlw_double ts_dz (ts.number_of_cells, ts.col_cellpos, ts.dz);
 		const rlw_int col_cells (ts.number_of_cells, ts.col_cellpos, ts.col_cells);
 
 		// process each column/cell individually
@@ -512,6 +513,35 @@ struct VertEqPropsImpl : public VertEqProps {
 			// assign to output
 			pc[i * NUM_PHASES + GAS] =  cap_pres;
 			pc[i * NUM_PHASES + WAT] = -cap_pres;
+
+			// interested in the derivatives of the capillary pressure as well?
+			if (dpcds) {
+				// volume available for the mobile liquid/gas: \phi (1-s_{w,r}-s_{g,r})
+				const double mob_vol = up.eval (col, mob_mix_vol[col], intf);
+
+				// change of interface height per of upscaled saturation; d\zeta_M/dS
+				const double dh_dSg = -(ts.h_tot[col] * upscaled_poro[col]) / mob_vol;
+
+				// change of hydrostatic pressure diff per change in interface height
+				const double hyd_dPc_dh = -gravity * dens_diff; // dPc/d\zeta_M
+
+				// change in entry pressure per *fine* saturation
+				const double dpe_dsg = fine_dpc[NUM_PHASES * GAS + GAS];
+
+				// change in fine saturation per interface height (in this block)
+				const double dsg_dh = 1 / ts_dz[col][intf.block()];
+
+				// derivative with respect to upscaled saturation
+				const double dPc_dSg = (dpe_dsg * dsg_dh + hyd_dPc_dh) * dh_dSg;
+
+				// assign to output: since Sw = 1 - Sg, then dpc_g/ds_w = -dkr_g/ds_g
+				// viewed as a 2x2 record; the minor index designates the denominator
+				// (saturation) and the major index designates the numerator (rel.perm.)
+				dpcds[i * (NUM_PHASES * NUM_PHASES) + NUM_PHASES * GAS + GAS] =  dPc_dSg;
+				dpcds[i * (NUM_PHASES * NUM_PHASES) + NUM_PHASES * GAS + WAT] = -dPc_dSg;
+				dpcds[i * (NUM_PHASES * NUM_PHASES) + NUM_PHASES * WAT + GAS] =  dPc_dSg;
+				dpcds[i * (NUM_PHASES * NUM_PHASES) + NUM_PHASES * WAT + WAT] = -dPc_dSg;
+			}
 		}
 	}
 
