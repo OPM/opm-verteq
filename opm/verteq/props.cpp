@@ -37,6 +37,7 @@ struct VertEqPropsImpl : public VertEqProps {
 	// we assume this ordering of the phases in arrays
 	static const int GAS = 0;
 	static const int WAT = 1;
+	static const int NUM_PHASES = 2;
 
 	/// Helper object to do averaging
 	const VertEqUpscaler up;
@@ -65,13 +66,10 @@ struct VertEqPropsImpl : public VertEqProps {
 	vector <Elevation> max_gas_elev;  // \zeta_R
 
 	virtual void upd_res_sat (const double* snap) {
-		// cache this here outside of the loop
-		const int num_phases = numPhases ();
-
 		// update saturation for each column
 		for (int col = 0; col < ts.number_of_cells; ++col) {
 			// current CO2 saturation
-			const double cur_sat = snap[col * num_phases + GAS];
+			const double cur_sat = snap[col * NUM_PHASES + GAS];
 
 			// has it increased? is there more of the plume in this column?
 			check_res_sat (col, cur_sat);
@@ -202,11 +200,13 @@ struct VertEqPropsImpl : public VertEqProps {
 		, prm_wat_int (ts.number_of_cells, ts.col_cellpos)
 		, gravity (grav_vec[THREE_DIMS - 1])	{
 
+		// check that we only have two phases
+		if (fp.numPhases () != NUM_PHASES) {
+			throw OPM_EXC ("Expected %d phases, but got %d", NUM_PHASES, fp.numPhases ());
+		}
+
 		// allocate memory to store results for faster lookup later
 		upscaled_poro.resize (ts.number_of_cells);
-
-		// number of phases (should be 2)
-		const int num_phases = fp.numPhases ();
 
 		// buffers that holds intermediate values for each column;
 		// pre-allocate to avoid doing that inside the loop
@@ -214,15 +214,15 @@ struct VertEqPropsImpl : public VertEqProps {
 		vector <double> kxx (ts.max_vert_res, 0.);  // abs.perm.
 		vector <double> kxy (ts.max_vert_res, 0.);
 		vector <double> kyy (ts.max_vert_res, 0.);
-		vector <double> sgr   (ts.max_vert_res * num_phases, 0.); // residual CO2
-		vector <double> l_swr (ts.max_vert_res * num_phases, 0.); // 1 - residual brine
+		vector <double> sgr   (ts.max_vert_res * NUM_PHASES, 0.); // residual CO2
+		vector <double> l_swr (ts.max_vert_res * NUM_PHASES, 0.); // 1 - residual brine
 		vector <double> lkl (ts.max_vert_res); // magnitude of abs.perm.; k_||
 
 		// saturations and rel.perms. of each phase, assuming maximum filling of...
-		vector <double> wat_sat (ts.max_vert_res * num_phases, 0.); // brine; res. CO2
-		vector <double> gas_sat (ts.max_vert_res * num_phases, 0.); // CO2; res. brine
-		vector <double> wat_mob (ts.max_vert_res * num_phases, 0.); // k_r(S_c=S_{c,r})
-		vector <double> gas_mob (ts.max_vert_res * num_phases, 0.); // k_r(S_c=1-S_{b,r})
+		vector <double> wat_sat (ts.max_vert_res * NUM_PHASES, 0.); // brine; res. CO2
+		vector <double> gas_sat (ts.max_vert_res * NUM_PHASES, 0.); // CO2; res. brine
+		vector <double> wat_mob (ts.max_vert_res * NUM_PHASES, 0.); // k_r(S_c=S_{c,r})
+		vector <double> gas_mob (ts.max_vert_res * NUM_PHASES, 0.); // k_r(S_c=1-S_{b,r})
 
 		// pointer to all porosities in the fine grid
 		const double* fine_poro = fp.porosity ();
@@ -281,8 +281,8 @@ struct VertEqPropsImpl : public VertEqProps {
 				// multiply with num_phases because the saturations for *both*
 				// phases are store consequtively (as a record); we only need
 				// the residuals framed as co2 saturations
-				const double sgr_ = sgr[row * num_phases + GAS];
-				const double l_swr_ = l_swr[row * num_phases + GAS];
+				const double sgr_ = sgr[row * NUM_PHASES + GAS];
+				const double l_swr_ = l_swr[row * NUM_PHASES + GAS];
 
 				// portions of the block that are filled with: residual co2,
 				// mobile fluid and residual brine, respectively
@@ -305,10 +305,10 @@ struct VertEqPropsImpl : public VertEqProps {
 			// has no other effect than to satisfy the ordering of items required
 			// for the relperm() call
 			for (int row = 0; row < col_cells.size (col); ++row) {
-				wat_sat[row * num_phases + GAS] = sgr[row * num_phases + GAS];
-				wat_sat[row * num_phases + WAT] = l_swr[row * num_phases + WAT];
-				gas_sat[row * num_phases + GAS] = l_swr[row * num_phases + GAS];
-				gas_sat[row * num_phases + WAT] = sgr[row * num_phases + WAT];
+				wat_sat[row * NUM_PHASES + GAS] = sgr[row * NUM_PHASES + GAS];
+				wat_sat[row * NUM_PHASES + WAT] = l_swr[row * NUM_PHASES + WAT];
+				gas_sat[row * NUM_PHASES + GAS] = l_swr[row * NUM_PHASES + GAS];
+				gas_sat[row * NUM_PHASES + WAT] = sgr[row * NUM_PHASES + WAT];
 			}
 
 			// get rel.perm. for those cases where one phase is (maximally) mobile
@@ -327,10 +327,10 @@ struct VertEqPropsImpl : public VertEqProps {
 			for (int row = 0; row < up.num_rows (col); ++row) {
 				// rel.perm. for CO2 when having maximal sat. (only residual brine); this
 				// is the rel.perm. for the CO2 that is in the plume
-				const double kr_plume = gas_mob[row * num_phases + GAS];
+				const double kr_plume = gas_mob[row * NUM_PHASES + GAS];
 
 				// rel.perm. of brine, when residual CO2
-				const double kr_brine = wat_mob[row + num_phases + WAT];
+				const double kr_brine = wat_mob[row + NUM_PHASES + WAT];
 
 				// upscaled rel. perm. change for this block; we'll use this to weight
 				// the depth fractions when we integrate to get the upscaled rel. perm.
@@ -372,7 +372,7 @@ struct VertEqPropsImpl : public VertEqProps {
 
 	/* fluid properties; these don't change when upscaling */
 	virtual int numPhases () const {
-		return fp.numPhases ();
+		return NUM_PHASES;
 	}
 
 	virtual const double* viscosity () const {
@@ -393,16 +393,13 @@ struct VertEqPropsImpl : public VertEqProps {
 	                      const int *cells,
 	                      double *kr,
 	                      double *dkrds) const {
-		// cache this on the outside of the loop
-		const int num_phases = numPhases();
-
 		// process each column/cell individually
 		for (int i = 0; i < n; ++i) {
 			// index (into the upscaled grid) of the column
 			const int col = cells[i];
 
 			// get the (upscaled) CO2 saturation
-			const double Sg = s[i * num_phases + GAS];
+			const double Sg = s[i * NUM_PHASES + GAS];
 
 			// get the block number that contains the active interface
 			const Elevation intf = intf_elev (col, Sg); // zeta_M
@@ -421,8 +418,8 @@ struct VertEqPropsImpl : public VertEqProps {
 			                       +up.eval (col, prm_wat_int[col], intf));
 
 			// assign to output
-			kr[i * num_phases + GAS] = Krg;
-			kr[i * num_phases + WAT] = Krw;
+			kr[i * NUM_PHASES + GAS] = Krg;
+			kr[i * NUM_PHASES + WAT] = Krw;
 
 			// was derivatives requested?
 			if (dkrds) {
@@ -444,10 +441,10 @@ struct VertEqPropsImpl : public VertEqProps {
 				// assign to output: since Sw = 1 - Sg, then dkr_g/ds_w = -dkr_g/ds_g
 				// viewed as a 2x2 record; the minor index designates the denominator
 				// (saturation) and the major index designates the numerator (rel.perm.)
-				dkrds[i * (num_phases * num_phases) + num_phases * GAS + GAS] =  dKrg_dSg;
-				dkrds[i * (num_phases * num_phases) + num_phases * GAS + WAT] = -dKrg_dSg;
-				dkrds[i * (num_phases * num_phases) + num_phases * WAT + GAS] =  dKrw_dSg;
-				dkrds[i * (num_phases * num_phases) + num_phases * WAT + WAT] = -dKrw_dSg;
+				dkrds[i * (NUM_PHASES * NUM_PHASES) + NUM_PHASES * GAS + GAS] =  dKrg_dSg;
+				dkrds[i * (NUM_PHASES * NUM_PHASES) + NUM_PHASES * GAS + WAT] = -dKrg_dSg;
+				dkrds[i * (NUM_PHASES * NUM_PHASES) + NUM_PHASES * WAT + GAS] =  dKrw_dSg;
+				dkrds[i * (NUM_PHASES * NUM_PHASES) + NUM_PHASES * WAT + WAT] = -dKrw_dSg;
 			}
 		}
 	}
@@ -459,7 +456,6 @@ struct VertEqPropsImpl : public VertEqProps {
 	                       double *dpcds) const {
 		// cache this on the outside of the loop; the phase properties
 		// are the same in every block
-		const int num_phases = numPhases();
 		const double dens_gas = density ()[GAS];
 		const double dens_wat = density ()[WAT];
 		const double dens_diff = dens_gas - dens_wat;
@@ -474,7 +470,7 @@ struct VertEqPropsImpl : public VertEqProps {
 			const int col = cells[i];
 
 			// get the (upscaled) CO2 saturation
-			const double Sg = s[i * num_phases + GAS];
+			const double Sg = s[i * NUM_PHASES + GAS];
 
 			// get the block number that contains the active interface
 			const Elevation intf = intf_elev (col, Sg); // zeta_M
@@ -494,8 +490,8 @@ struct VertEqPropsImpl : public VertEqProps {
 			const double cap_pres = hyd_diff;
 
 			// assign to output
-			pc[i * num_phases + GAS] =  cap_pres;
-			pc[i * num_phases + WAT] = -cap_pres;
+			pc[i * NUM_PHASES + GAS] =  cap_pres;
+			pc[i * NUM_PHASES + WAT] = -cap_pres;
 		}
 	}
 
