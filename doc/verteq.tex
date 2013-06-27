@@ -42,6 +42,9 @@
 \newcommand{\inv}[1]{{#1}^{-1}}                               % inverse
 \newcommand{\latr}[1]{{#1}_{\|}}                              % lateral
 \newcommand{\magn}[1]{{#1}_|}                                 % magnitude
+\newcommand{\grad}[1]{\nabla #1}                              % gradient
+\newcommand{\inner}[2]{\binop{#1}{\cdot}{#2}}                 % inner product
+\newcommand{\vect}[1]{\underline{\mathbf{#1}}}                % vector
 
 % --- nomenclature ---
 \newcommand{\Hei}{H}        % total height
@@ -77,6 +80,13 @@
 \newcommand{\krnwr}{c}      % rel. perm. for co2 when residual brine
 \newcommand{\krwnr}{b}      % rel. perm. for brine when residual co2
 
+\newcommand{\pres}{p}       % fine-scale pressure
+\newcommand{\Pres}{P}       % coarse-scale pressure
+\newcommand{\cpl}{e}        % capillary pressure indicator
+\newcommand{\dif}{\mathrm{cap}} % pressure difference indicator
+\newcommand{\dens}{\rho}    % density
+\newcommand{\grav}{\vect{g}}% gravity
+
 % --- shortcuts ---
 \newcommand{\Satp}{\Sat_\phs}
 \newcommand{\satp}{\sat_\phs}
@@ -100,6 +110,15 @@
 \newcommand{\rlpw}{\rlp{\wet}}
 \newcommand{\Absprm}{\Prm}          % upscaled abs. perm. used in rel. perm. calc.
 \newcommand{\absprm}{\latr{\prm}}   % abs. perm. used in rel. perm. calc.
+
+\newcommand{\pe}{\pres_{\cpl}}      % fine-scale entry pressure
+\newcommand{\pg}{\pres_{\nap}}      % CO2 fine-scale pressure
+\newcommand{\Pg}{\Pres_{\nap}}      % CO2 coarse-scale pressure
+\newcommand{\pw}{\pres_{\wet}}      % brine fine-scale pressure
+\newcommand{\Pw}{\Pres_{\wet}}      % brine coarse-scale pressure
+\newcommand{\Pc}{\Pres_{\dif}}      % upscaled capillary pressure
+\newcommand{\densw}{\dens_{\wet}}   % brine density
+\newcommand{\densn}{\dens_{\nap}}   % CO2 density
 
 \begin{document}
 We assume that we have two phases, \COO and brine:
@@ -425,4 +444,57 @@ And
 \Rlpw \prime &= 1 - \avg{ \dual{ \krwnr } }{ \LevR } - \avg{ \krwnr }{ \LevM } \\
 \der{ \Rlpw \prime }{ \Satn } &= - \frac{ \krwnr }{ \ddual{ \swr }{ \snr } }
 \end{align}
+
+\subsection{Capillary Pressure}
+We use the pressure on the top surface of the column as the upscaled pressure for \COO, and the pressure at the bottom for the brine. The pressure for each phase is picked from the point where it is supposedly most mobile.
+
+Pressure downward in the column is assumed to be in hydrostatic equilibrium:
+\begin{align}
+\eqlabel{ve:pc:hydro-static}
+\pg \aleft( \h \aright) &= \Pg + \inner{ \grad{ \dph } }{ \grav } \intg{ \h }{ \LevT }{ \dens_{\nap} }{ \dph } \\
+\pw \aleft( \h \aright) &= \Pw - \inner{ \grad{ \dph } }{ \grav } \intg{ \LevB }{ \h }{ \dens_{\wet} }{ \dph } \\
+&= \Pw - \inner{ \grad{ \dph } }{ \grav } \left( \intg{ \LevB }{ \LevT }{ \dens_{\wet} }{ \dph } - \intg{ \h }{ \LevT }{ \dens_{\wet} }{ \dph } \right)
+\end{align}
+
+In \emph{equilibrium} the difference between the pressures should be equal to the entry pressure
+
+\begin{equation}
+\eqlabel{ve:pc:entry-press}
+\pe \aleft( \satn \aleft( \h \aright) \aright) = \pg \aleft( \h \aright) - \pw \aleft( \h \aright)
+\end{equation}
+
+If we now insert \eqref[vref]{ve:pc:hydro-static} into each of the terms  on the right-hand side of \eqref[vref]{ve:pc:entry-press}, we get
+
+\begin{equation}
+\eqlabel{ve:pc:hydrostatic-entry}
+\pe \aleft( \satn \aleft( \h \aright) \aright) = \Pg - \Pw + \inner{ \grad{ \dph } }{ \grav } \left( \intg{ \h }{ \LevT }{ \dens_{\nap} - \dens_{\wet} }{ \dph } + \intg{ \LevB }{ \LevT }{ \dens_{\wet} }{ \dph } \right)
+\end{equation}
+
+The level where there is equilibrium between the phases is in the interface between them, i.e.~where \( \h = \LevM \). If we insert this into \eqref[vref]{ve:pc:hydrostatic-entry} we get
+
+\begin{equation}
+\eqlabel{ve:pc:upscaled-press-diff}
+\Pc \aleft( \LevM \aright) = \pe \aleft( \at{ \satn }{ \LevM } \aright) - \inner{ \grad{ \dph } }{ \grav } \left( \intg{ \LevM }{ \LevT }{ \dens_{\nap} - \dens_{\wet} }{ \dph } + \intg{ \LevB }{ \LevT }{ \dens_{\wet} }{ \dph } \right)
+\end{equation}
+
+Since we assume incompressible fluids and thus constant densities, we can use the write out the integrals on the right-hand side using the levels themselves:
+
+\begin{equation}
+\eqlabel{ve:pc:incomp-cap}
+\Pc \aleft( \LevM \aright) = \pe \aleft( \at{ \satn }{ \LevM } \aright) - \inner{ \grad{ \dph } }{ \grav } \left( \left( \dens_{\nap} - \dens_{\wet} \right) \left( \LevT - \LevM \right) + \dens_{\wet} \left( \LevT - \LevB \right) \right)
+\end{equation}
+
+We can take the derivative of \eqref[vref]{ve:pc:upscaled-press-diff}:
+\begin{equation}
+\eqlabel{ve:pc:cap-deriv}
+\der{ \Pc }{ \LevM } = \der{ \pe }{ \satn } \der{ \satn }{ \LevM } + \inner{ \grad{ \dph } }{ \grav } \left( \dens_{\nap} - \dens_{\wet} \right)
+\end{equation}
+
+(The sign change is because we take the derivative with respect to the lower bound).
+
+Note that in the discretized version we have
+\begin{equation}
+\eqlabel{ve:pc:sat-deriv}
+\der{ \satn }{ \LevM } = \frac{ 1 }{ \at{ \mathrm{d}\dph }{ \LevM } }
+\end{equation}
 \end{document}
