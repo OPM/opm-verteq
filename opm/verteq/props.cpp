@@ -9,6 +9,11 @@
 using namespace Opm;
 using namespace std;
 
+/**
+ * In this module, CO2 is referred to as the "gas" phase even though
+ * it is in a supercritical state. This is just to keep an easily
+ * identifiable moniker on the variables.
+ */
 struct VertEqPropsImpl : public VertEqProps {
 	/// Get the underlaying fluid information from here
 	const IncompPropertiesInterface& fp;
