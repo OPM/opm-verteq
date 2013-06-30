@@ -5,6 +5,7 @@
 #include <opm/core/simulator/SimulatorIncompTwophase.hpp>
 #include <opm/core/simulator/SimulatorReport.hpp>
 #include <opm/core/simulator/TwophaseState.hpp>
+#include <opm/core/wells/WellsManager.hpp>
 using namespace std;
 
 namespace Opm {
@@ -32,6 +33,7 @@ VertEqWrapper <Simulator>::VertEqWrapper (
 	                     param,
 	                     grid,
 	                     props,
+	                     wells_manager.c_wells (),
 	                     gravity);
 
 	// pass arguments to the underlaying simulator

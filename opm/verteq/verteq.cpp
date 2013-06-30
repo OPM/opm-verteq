@@ -17,8 +17,10 @@ struct VertEqImpl : public VertEq {
 	virtual ~VertEqImpl () {}
 	void init (const UnstructuredGrid& fullGrid,
 	           const IncompPropertiesInterface& fullProps,
+	           const Wells* wells,
 	           const double* gravity);
 	virtual const UnstructuredGrid& grid();
+	virtual const Wells* wells();
 	virtual const IncompPropertiesInterface& props();
 	virtual void upscale (const TwophaseState& fineScale,
 	                      TwophaseState& coarseScale);
@@ -33,16 +35,18 @@ VertEq::create (const string& title,
                 const ParameterGroup& args,
                 const UnstructuredGrid& fullGrid,
                 const IncompPropertiesInterface& fullProps,
+                const Wells* wells,
                 const double* gravity) {
 	// we don't provide any parameters to do tuning yet
 	auto_ptr <VertEqImpl> impl (new VertEqImpl ());
-	impl->init (fullGrid, fullProps, gravity);
+	impl->init (fullGrid, fullProps, wells, gravity);
 	return impl.release();
 }
 
 void
 VertEqImpl::init(const UnstructuredGrid& fullGrid,
                  const IncompPropertiesInterface& fullProps,
+                 const Wells* wells,
                  const double* gravity) {
 	// generate a two-dimensional upscaling as soon as we get the grid
 	ts = auto_ptr <TopSurf> (TopSurf::create (fullGrid));
@@ -53,6 +57,11 @@ const UnstructuredGrid&
 VertEqImpl::grid () {
 	// simply return the standard part of the grid
 	return *(ts.get ());
+}
+
+const Wells*
+VertEqImpl::wells () {
+	return 0;
 }
 
 const IncompPropertiesInterface&
