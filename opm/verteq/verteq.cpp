@@ -5,6 +5,7 @@
 #include <opm/verteq/verteq.hpp>
 #include <opm/core/simulator/TwophaseState.hpp>
 #include <opm/core/utility/parameters/ParameterGroup.hpp>
+#include <opm/core/wells.h>
 #include <memory>           // auto_ptr
 
 using namespace Opm;
@@ -13,12 +14,21 @@ using namespace std;
 
 // Actual implementation of the upscaling
 struct VertEqImpl : public VertEq {
-	// public methods defined in the interface
-	virtual ~VertEqImpl () {}
+	// this pointer needs special handling to dispose; use a zero pointer
+	// to signal that it has not been initialized properly (probably some
+	// other component which threw an exception)
+	Wells* w;
+	VertEqImpl () : w (0) {}
+	virtual ~VertEqImpl () {
+		if (w) {
+			destroy_wells (w);
+		}
+	}
 	void init (const UnstructuredGrid& fullGrid,
 	           const IncompPropertiesInterface& fullProps,
 	           const Wells* wells,
 	           const double* gravity);
+	// public methods defined in the interface
 	virtual const UnstructuredGrid& grid();
 	virtual const Wells* wells();
 	virtual const IncompPropertiesInterface& props();
@@ -51,6 +61,8 @@ VertEqImpl::init(const UnstructuredGrid& fullGrid,
 	// generate a two-dimensional upscaling as soon as we get the grid
 	ts = auto_ptr <TopSurf> (TopSurf::create (fullGrid));
 	pr = auto_ptr <VertEqProps> (VertEqProps::create (fullProps, *ts, gravity));
+	// create a separate, but identical, list of wells we can work on
+	w = clone_wells(wells);
 }
 
 const UnstructuredGrid&
@@ -61,7 +73,8 @@ VertEqImpl::grid () {
 
 const Wells*
 VertEqImpl::wells () {
-	return 0;
+	// simply return our own list of wells we have translated
+	return w;
 }
 
 const IncompPropertiesInterface&
