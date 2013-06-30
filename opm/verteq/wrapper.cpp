@@ -5,6 +5,7 @@
 #include <opm/core/simulator/SimulatorIncompTwophase.hpp>
 #include <opm/core/simulator/SimulatorReport.hpp>
 #include <opm/core/simulator/TwophaseState.hpp>
+#include <opm/core/wells/WellsManager.hpp>
 using namespace std;
 
 namespace Opm {
@@ -24,6 +25,7 @@ VertEqWrapper <Simulator>::VertEqWrapper (
 	// initialize pointer to null, so it is deleted properly
 	// if the sim. ctor throws
 	: ve (0)
+	, wells_mgr (0)
 	, sim (0) {
 
 	// VE model that is injected in between the fine-scale
@@ -32,14 +34,25 @@ VertEqWrapper <Simulator>::VertEqWrapper (
 	                     param,
 	                     grid,
 	                     props,
+	                     wells_manager.c_wells (),
 	                     gravity);
+
+	// copying the well manager is explicitly forbidden (!)
+	// so we loose the hierarchy of wells, but that shouldn't
+	// matter; what counts is that there is an equal number of
+	// wells that are put in the equations. unfortunately, this
+	// scheme will make yet another copy of the well list.
+	// the well manager must be a member of the wrapper, since
+	// it needs to be live when we call the run() method of the
+	// simulator (it cannot be a local here)
+	wells_mgr = new WellsManager (const_cast <Wells*> (ve->wells ()));
 
 	// pass arguments to the underlaying simulator
 	sim = new Simulator (param,
 	                     ve->grid (),
 	                     ve->props (),
 	                     rock_comp_props,
-	                     wells_manager,
+	                     *wells_mgr,
 	                     src,
 	                     bcs,
 	                     linsolver,
@@ -49,6 +62,7 @@ VertEqWrapper <Simulator>::VertEqWrapper (
 template <typename Simulator>
 VertEqWrapper <Simulator>::~VertEqWrapper () {
 	delete sim;
+	delete wells_mgr;
 	delete ve;
 }
 
@@ -69,6 +83,12 @@ VertEqWrapper <SimulatorIncompTwophase>::run(
 	// make the state "active", so that it push its changes to the
 	// ve model whenever an update is completed and its state is stable
 	sim->connect_timestep <VertEqState, &VertEqState::notify> (upscaled_state);
+
+	// we "reuse" the well state for the three-dimensional grid;
+	// it is a value object which is created once based on the
+	// list of wells. the internal well manager used here contains
+	// the same wells at the same indices as the original, so the
+	// state should work with the clone, too.
 
 	// forward the call to the underlaying simulator
 	return sim->run(timer, upscaled_state, well_state);

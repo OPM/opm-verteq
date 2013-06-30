@@ -12,6 +12,7 @@
 
 // forward declaration
 struct UnstructuredGrid;
+struct Wells;
 
 namespace Opm {
 
@@ -58,6 +59,8 @@ public:
 	 * @param fullGrid Grid obtained elsewhere. This object is not
 	 *        adopted, but is assumed to be live over the lifetime
 	 *        of the upscaling.
+	 * @param fullWells Wells list with indices in the three-dimensional
+	 *                  grid. This is typically initialized from a deck.
 	 * @param gravity Gravity vector (three-dimensional); must contain
 	 *                three elements, whereas the last is for depth.
 	 *                Usually this is {0., 0., Opm::unit::gravity}.
@@ -68,6 +71,7 @@ public:
 	                       const Opm::parameter::ParameterGroup& args,
 	                       const UnstructuredGrid& fullGrid,
 	                       const IncompPropertiesInterface& fullProps,
+	                       const Wells* fullWells,
 	                       const double* gravity);
 
 	// virtual destructor, actual functionality relayed to real impl.
@@ -84,6 +88,17 @@ public:
 	 *
 	 */
 	virtual const UnstructuredGrid& grid () = 0;
+
+	/**
+	 * @brief Accessor method for the list of upscaled wells.
+	 *
+	 * This method is inexpensive; the listis not constructed upon
+	 * every invocation.
+	 *
+	 * @return List of wells that may be passed to other components
+	 *         in the simulator. You do NOT own this object!
+	 */
+	virtual const Wells* wells () = 0;
 
 	/**
 	 * @brief props Accessor method for the upscaled "fluid" objects
