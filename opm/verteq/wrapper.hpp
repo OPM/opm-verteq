@@ -25,6 +25,7 @@ class LinearSolverInterface;
 class SimulatorTimer;
 class TwophaseState;
 class VertEq;
+class WellsManager;
 class WellState;
 struct SimulatorReport;
 
@@ -87,6 +88,9 @@ struct OPM_VERTEQ_PUBLIC VertEqWrapper {
 private:
 	// vertical equilibrium model
 	VertEq* ve;
+
+	// list of translated wells
+	WellsManager* wells_mgr;
 
 	// underlaying simulator to use for 2D
 	Simulator* sim;
