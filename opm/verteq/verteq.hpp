@@ -58,13 +58,17 @@ public:
 	 * @param fullGrid Grid obtained elsewhere. This object is not
 	 *        adopted, but is assumed to be live over the lifetime
 	 *        of the upscaling.
+	 * @param gravity Gravity vector (three-dimensional); must contain
+	 *                three elements, whereas the last is for depth.
+	 *                Usually this is {0., 0., Opm::unit::gravity}.
 	 *
 	 * @return A new instance implementing this interface.
 	 */
 	static VertEq* create (const std::string& title,
 	                       const Opm::parameter::ParameterGroup& args,
 	                       const UnstructuredGrid& fullGrid,
-	                       const IncompPropertiesInterface& fullProps);
+	                       const IncompPropertiesInterface& fullProps,
+	                       const double* gravity);
 
 	// virtual destructor, actual functionality relayed to real impl.
 	virtual ~VertEq () {}

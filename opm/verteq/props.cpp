@@ -9,6 +9,11 @@
 using namespace Opm;
 using namespace std;
 
+/**
+ * In this module, CO2 is referred to as the "gas" phase even though
+ * it is in a supercritical state. This is just to keep an easily
+ * identifiable moniker on the variables.
+ */
 struct VertEqPropsImpl : public VertEqProps {
 	/// Get the underlaying fluid information from here
 	const IncompPropertiesInterface& fp;
@@ -37,6 +42,7 @@ struct VertEqPropsImpl : public VertEqProps {
 	// we assume this ordering of the phases in arrays
 	static const int GAS = 0;
 	static const int WAT = 1;
+	static const int NUM_PHASES = 2;
 
 	/// Helper object to do averaging
 	const VertEqUpscaler up;
@@ -65,13 +71,10 @@ struct VertEqPropsImpl : public VertEqProps {
 	vector <Elevation> max_gas_elev;  // \zeta_R
 
 	virtual void upd_res_sat (const double* snap) {
-		// cache this here outside of the loop
-		const int num_phases = numPhases ();
-
 		// update saturation for each column
 		for (int col = 0; col < ts.number_of_cells; ++col) {
 			// current CO2 saturation
-			const double cur_sat = snap[col * num_phases + GAS];
+			const double cur_sat = snap[col * NUM_PHASES + GAS];
 
 			// has it increased? is there more of the plume in this column?
 			check_res_sat (col, cur_sat);
@@ -171,8 +174,12 @@ struct VertEqPropsImpl : public VertEqProps {
 	RunLenData <double> prm_wat;      // K^{-1} k_|| k_{w,r} (s_{g,r})
 	RunLenData <double> prm_wat_int;  // 1/H \int_h^{\zeta_T} above dz
 
+	// gravity in the z-direction; \nabla z \cdot \mathbf{g}
+	const double gravity;
+
 	VertEqPropsImpl (const IncompPropertiesInterface& fineProps,
-	                 const TopSurf& topSurf)
+	                 const TopSurf& topSurf,
+	                 const double* grav_vec)
 		: fp (fineProps)
 		, ts (topSurf)
 		, up (ts)
@@ -195,13 +202,16 @@ struct VertEqPropsImpl : public VertEqProps {
 		, prm_res (ts.number_of_cells, ts.col_cellpos)
 		, prm_res_int (ts.number_of_cells, ts.col_cellpos)
 		, prm_wat (ts.number_of_cells, ts.col_cellpos)
-		, prm_wat_int (ts.number_of_cells, ts.col_cellpos) {
+		, prm_wat_int (ts.number_of_cells, ts.col_cellpos)
+		, gravity (grav_vec[THREE_DIMS - 1])	{
+
+		// check that we only have two phases
+		if (fp.numPhases () != NUM_PHASES) {
+			throw OPM_EXC ("Expected %d phases, but got %d", NUM_PHASES, fp.numPhases ());
+		}
 
 		// allocate memory to store results for faster lookup later
 		upscaled_poro.resize (ts.number_of_cells);
-
-		// number of phases (should be 2)
-		const int num_phases = fp.numPhases ();
 
 		// buffers that holds intermediate values for each column;
 		// pre-allocate to avoid doing that inside the loop
@@ -209,15 +219,15 @@ struct VertEqPropsImpl : public VertEqProps {
 		vector <double> kxx (ts.max_vert_res, 0.);  // abs.perm.
 		vector <double> kxy (ts.max_vert_res, 0.);
 		vector <double> kyy (ts.max_vert_res, 0.);
-		vector <double> sgr   (ts.max_vert_res * num_phases, 0.); // residual CO2
-		vector <double> l_swr (ts.max_vert_res * num_phases, 0.); // 1 - residual brine
+		vector <double> sgr   (ts.max_vert_res * NUM_PHASES, 0.); // residual CO2
+		vector <double> l_swr (ts.max_vert_res * NUM_PHASES, 0.); // 1 - residual brine
 		vector <double> lkl (ts.max_vert_res); // magnitude of abs.perm.; k_||
 
 		// saturations and rel.perms. of each phase, assuming maximum filling of...
-		vector <double> wat_sat (ts.max_vert_res * num_phases, 0.); // brine; res. CO2
-		vector <double> gas_sat (ts.max_vert_res * num_phases, 0.); // CO2; res. brine
-		vector <double> wat_mob (ts.max_vert_res * num_phases, 0.); // k_r(S_c=S_{c,r})
-		vector <double> gas_mob (ts.max_vert_res * num_phases, 0.); // k_r(S_c=1-S_{b,r})
+		vector <double> wat_sat (ts.max_vert_res * NUM_PHASES, 0.); // brine; res. CO2
+		vector <double> gas_sat (ts.max_vert_res * NUM_PHASES, 0.); // CO2; res. brine
+		vector <double> wat_mob (ts.max_vert_res * NUM_PHASES, 0.); // k_r(S_c=S_{c,r})
+		vector <double> gas_mob (ts.max_vert_res * NUM_PHASES, 0.); // k_r(S_c=1-S_{b,r})
 
 		// pointer to all porosities in the fine grid
 		const double* fine_poro = fp.porosity ();
@@ -276,8 +286,8 @@ struct VertEqPropsImpl : public VertEqProps {
 				// multiply with num_phases because the saturations for *both*
 				// phases are store consequtively (as a record); we only need
 				// the residuals framed as co2 saturations
-				const double sgr_ = sgr[row * num_phases + GAS];
-				const double l_swr_ = l_swr[row * num_phases + GAS];
+				const double sgr_ = sgr[row * NUM_PHASES + GAS];
+				const double l_swr_ = l_swr[row * NUM_PHASES + GAS];
 
 				// portions of the block that are filled with: residual co2,
 				// mobile fluid and residual brine, respectively
@@ -300,10 +310,10 @@ struct VertEqPropsImpl : public VertEqProps {
 			// has no other effect than to satisfy the ordering of items required
 			// for the relperm() call
 			for (int row = 0; row < col_cells.size (col); ++row) {
-				wat_sat[row * num_phases + GAS] = sgr[row * num_phases + GAS];
-				wat_sat[row * num_phases + WAT] = l_swr[row * num_phases + WAT];
-				gas_sat[row * num_phases + GAS] = l_swr[row * num_phases + GAS];
-				gas_sat[row * num_phases + WAT] = sgr[row * num_phases + WAT];
+				wat_sat[row * NUM_PHASES + GAS] = sgr[row * NUM_PHASES + GAS];
+				wat_sat[row * NUM_PHASES + WAT] = l_swr[row * NUM_PHASES + WAT];
+				gas_sat[row * NUM_PHASES + GAS] = l_swr[row * NUM_PHASES + GAS];
+				gas_sat[row * NUM_PHASES + WAT] = sgr[row * NUM_PHASES + WAT];
 			}
 
 			// get rel.perm. for those cases where one phase is (maximally) mobile
@@ -322,10 +332,10 @@ struct VertEqPropsImpl : public VertEqProps {
 			for (int row = 0; row < up.num_rows (col); ++row) {
 				// rel.perm. for CO2 when having maximal sat. (only residual brine); this
 				// is the rel.perm. for the CO2 that is in the plume
-				const double kr_plume = gas_mob[row * num_phases + GAS];
+				const double kr_plume = gas_mob[row * NUM_PHASES + GAS];
 
 				// rel.perm. of brine, when residual CO2
-				const double kr_brine = wat_mob[row + num_phases + WAT];
+				const double kr_brine = wat_mob[row + NUM_PHASES + WAT];
 
 				// upscaled rel. perm. change for this block; we'll use this to weight
 				// the depth fractions when we integrate to get the upscaled rel. perm.
@@ -367,7 +377,7 @@ struct VertEqPropsImpl : public VertEqProps {
 
 	/* fluid properties; these don't change when upscaling */
 	virtual int numPhases () const {
-		return fp.numPhases ();
+		return NUM_PHASES;
 	}
 
 	virtual const double* viscosity () const {
@@ -388,16 +398,13 @@ struct VertEqPropsImpl : public VertEqProps {
 	                      const int *cells,
 	                      double *kr,
 	                      double *dkrds) const {
-		// cache this on the outside of the loop
-		const int num_phases = numPhases();
-
 		// process each column/cell individually
 		for (int i = 0; i < n; ++i) {
 			// index (into the upscaled grid) of the column
 			const int col = cells[i];
 
 			// get the (upscaled) CO2 saturation
-			const double Sg = s[i * num_phases + GAS];
+			const double Sg = s[i * NUM_PHASES + GAS];
 
 			// get the block number that contains the active interface
 			const Elevation intf = intf_elev (col, Sg); // zeta_M
@@ -416,8 +423,8 @@ struct VertEqPropsImpl : public VertEqProps {
 			                       +up.eval (col, prm_wat_int[col], intf));
 
 			// assign to output
-			kr[i * num_phases + GAS] = Krg;
-			kr[i * num_phases + WAT] = Krw;
+			kr[i * NUM_PHASES + GAS] = Krg;
+			kr[i * NUM_PHASES + WAT] = Krw;
 
 			// was derivatives requested?
 			if (dkrds) {
@@ -439,10 +446,10 @@ struct VertEqPropsImpl : public VertEqProps {
 				// assign to output: since Sw = 1 - Sg, then dkr_g/ds_w = -dkr_g/ds_g
 				// viewed as a 2x2 record; the minor index designates the denominator
 				// (saturation) and the major index designates the numerator (rel.perm.)
-				dkrds[i * (num_phases * num_phases) + num_phases * GAS + GAS] =  dKrg_dSg;
-				dkrds[i * (num_phases * num_phases) + num_phases * GAS + WAT] = -dKrg_dSg;
-				dkrds[i * (num_phases * num_phases) + num_phases * WAT + GAS] =  dKrw_dSg;
-				dkrds[i * (num_phases * num_phases) + num_phases * WAT + WAT] = -dKrw_dSg;
+				dkrds[i * (NUM_PHASES * NUM_PHASES) + NUM_PHASES * GAS + GAS] =  dKrg_dSg;
+				dkrds[i * (NUM_PHASES * NUM_PHASES) + NUM_PHASES * GAS + WAT] = -dKrg_dSg;
+				dkrds[i * (NUM_PHASES * NUM_PHASES) + NUM_PHASES * WAT + GAS] =  dKrw_dSg;
+				dkrds[i * (NUM_PHASES * NUM_PHASES) + NUM_PHASES * WAT + WAT] = -dKrw_dSg;
 			}
 		}
 	}
@@ -452,7 +459,95 @@ struct VertEqPropsImpl : public VertEqProps {
 	                       const int *cells,
 	                       double *pc,
 	                       double *dpcds) const {
-		throw OPM_EXC ("Not implemented yet");
+		// cache this on the outside of the loop; the phase properties
+		// are the same in every block
+		const double dens_gas = density ()[GAS];
+		const double dens_wat = density ()[WAT];
+		const double dens_diff = dens_gas - dens_wat;
+
+		// wrappers to make sure that we can access this matrix without
+		// doing index calculations ourselves
+		const rlw_double ts_h (ts.number_of_cells, ts.col_cellpos, ts.h);
+		const rlw_double ts_dz (ts.number_of_cells, ts.col_cellpos, ts.dz);
+		const rlw_int col_cells (ts.number_of_cells, ts.col_cellpos, ts.col_cells);
+
+		// process each column/cell individually
+		for (int i = 0; i < n; ++i) {
+			// index (into the upscaled grid) of the column
+			const int col = cells[i];
+
+			// get the (upscaled) CO2 saturation
+			const double Sg = s[i * NUM_PHASES + GAS];
+
+			// get the block number that contains the active interface
+			const Elevation intf = intf_elev (col, Sg); // zeta_M
+
+			// heights from top surface to the interface, and to bottom
+			const double intf_hgt = up.eval (col, ts_h[col], intf); // \zeta_T - \zeta_M
+			const double botm_hgt = ts.h_tot[col]; // \zeta_T - \zeta_B
+
+			// the slopes of the pressure curves are different. the distance
+			// between them (at the top for instance) is dependent on where
+			// they intersect (i.e. at the interface between the phases). in
+			// addition, the brine pressure is measured at the bottom, so we
+			// must also add the total height to get down there
+			const double hyd_diff = -gravity * (intf_hgt * dens_diff + botm_hgt * dens_wat);
+
+			// find the fine-scale element that holds the interface; we already
+			// know the relative index in the column; ask the top surface for
+			// global identity
+			const int glob_id = col_cells[col][intf.block()];
+
+			// find the entry pressure in this block. this code could
+			// be optimized so it only called the capillary pressure
+			// function for the fine-scale properties once instead of
+			// inside the loop, but that would require us to allocate
+			// arrays to hold all input and output, instead of just using
+			// local variables. BTW; why the number of outputs?
+			double fine_sat[NUM_PHASES];
+			double fine_pc[NUM_PHASES];               // entry pressures
+			double fine_dpc[NUM_PHASES * NUM_PHASES]; // derivatives
+			fine_sat[GAS] = intf.fraction ();
+			fine_sat[WAT] = 1 - fine_sat[GAS];
+			fp.capPress (1, fine_sat, &glob_id, fine_pc, fine_dpc);
+
+			// total capillary pressure. the fine scale entry pressure is
+			// a wedge between the slopes of the hydrostatic pressures.
+			const double cap_pres = fine_pc[GAS] + hyd_diff;
+
+			// assign to output
+			pc[i * NUM_PHASES + GAS] =  cap_pres;
+			pc[i * NUM_PHASES + WAT] = -cap_pres;
+
+			// interested in the derivatives of the capillary pressure as well?
+			if (dpcds) {
+				// volume available for the mobile liquid/gas: \phi (1-s_{w,r}-s_{g,r})
+				const double mob_vol = up.eval (col, mob_mix_vol[col], intf);
+
+				// change of interface height per of upscaled saturation; d\zeta_M/dS
+				const double dh_dSg = -(ts.h_tot[col] * upscaled_poro[col]) / mob_vol;
+
+				// change of hydrostatic pressure diff per change in interface height
+				const double hyd_dPc_dh = -gravity * dens_diff; // dPc/d\zeta_M
+
+				// change in entry pressure per *fine* saturation
+				const double dpe_dsg = fine_dpc[NUM_PHASES * GAS + GAS];
+
+				// change in fine saturation per interface height (in this block)
+				const double dsg_dh = 1 / ts_dz[col][intf.block()];
+
+				// derivative with respect to upscaled saturation
+				const double dPc_dSg = (dpe_dsg * dsg_dh + hyd_dPc_dh) * dh_dSg;
+
+				// assign to output: since Sw = 1 - Sg, then dpc_g/ds_w = -dkr_g/ds_g
+				// viewed as a 2x2 record; the minor index designates the denominator
+				// (saturation) and the major index designates the numerator (rel.perm.)
+				dpcds[i * (NUM_PHASES * NUM_PHASES) + NUM_PHASES * GAS + GAS] =  dPc_dSg;
+				dpcds[i * (NUM_PHASES * NUM_PHASES) + NUM_PHASES * GAS + WAT] = -dPc_dSg;
+				dpcds[i * (NUM_PHASES * NUM_PHASES) + NUM_PHASES * WAT + GAS] =  dPc_dSg;
+				dpcds[i * (NUM_PHASES * NUM_PHASES) + NUM_PHASES * WAT + WAT] = -dPc_dSg;
+			}
+		}
 	}
 
 	virtual void satRange (const int n,
@@ -471,9 +566,12 @@ struct VertEqPropsImpl : public VertEqProps {
 
 VertEqProps*
 VertEqProps::create (const IncompPropertiesInterface& fineProps,
-                     const TopSurf& topSurf) {
+                     const TopSurf& topSurf,
+                     const double* grav_vec) {
 	// construct real object which contains all the implementation details
-	auto_ptr <VertEqProps> props (new VertEqPropsImpl (fineProps, topSurf));
+	auto_ptr <VertEqProps> props (new VertEqPropsImpl (fineProps,
+	                                                   topSurf,
+	                                                   grav_vec));
 
 	// client owns pointer to constructed fluid object from this point
 	return props.release ();
