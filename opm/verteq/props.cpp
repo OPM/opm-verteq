@@ -563,6 +563,16 @@ struct VertEqPropsImpl : public VertEqProps {
 		fill (smin, smin + np, 0.);
 		fill (smax, smax + np, 1.);
 	}
+
+	virtual void upscale_pressure (const double* finePressure,
+	                               double* coarsePressure) {
+		// TODO:
+	}
+
+	virtual void upscale_saturation (const double* fineSaturation,
+	                                 double* coarseSaturation) {
+		// TODO:
+	}
 };
 
 VertEqProps*

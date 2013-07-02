@@ -48,6 +48,40 @@ struct VertEqProps : public IncompPropertiesInterface {
 	 *            same as in the properties interface.
 	 */
 	virtual void upd_res_sat (const double* sat) = 0;
+
+	/**
+	 * Upscale pressure from fine-scale to coarse-scale.
+	 *
+	 * @param[in] finePressure
+	 *	Pressure for each block in the fine grid. There is only one value
+	 *	for pressure, the pressure for hydrostatic equilibrium in each block.
+	 *
+	 * @param[out] coarsePressure
+	 *	Pressure for each column in the top surface grid. There is only one
+	 *	value for pressure, weighted from each of the blocks in the column.
+	 *
+	 *	The space for the data must have been allocated by the caller.
+	 */
+	virtual void upscale_pressure (const double* finePressure,
+	                               double* coarsePressure) = 0;
+
+	/**
+	 * Upscale saturation from fine-scale to coarse-scale.
+	 *
+	 * @param[in] fineSaturation
+	 *	Saturation for each phase, and for each block in the fine grid. The
+	 *	data for each block is kept together, i.e. the phase index varies
+	 *	most quickly.
+	 *
+	 * @param[out] coarseSaturation
+	 *	Saturation for each phase, and for each column in the coarse grid. The
+	 *	data for each column is kept together, i.e. the phase index varies
+	 *	most quickly.
+	 *
+	 *	The space for the data must have been allocated by the caller.
+	 */
+	virtual void upscale_saturation (const double* finePressure,
+	                                 double* coarsePressure) = 0;
 };
 
 } // namespace Opm
