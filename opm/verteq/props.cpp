@@ -3,6 +3,7 @@
 #include <opm/verteq/upscale.hpp>
 #include <opm/verteq/utility/exc.hpp>
 #include <opm/verteq/utility/runlen.hpp>
+#include <opm/core/props/BlackoilPhases.hpp>
 #include <algorithm> // fill
 #include <cmath> // sqrt
 #include <memory> // auto_ptr
@@ -40,8 +41,8 @@ struct VertEqPropsImpl : public VertEqProps {
 	static const int KYY_OFS_2D = 1 * TWO_DIMS + 1; // (y, y), y = 1
 
 	// we assume this ordering of the phases in arrays
-	static const int GAS = 0;
-	static const int WAT = 1;
+	static const int GAS = BlackoilPhases::Liquid;
+	static const int WAT = BlackoilPhases::Aqua;
 	static const int NUM_PHASES = 2;
 
 	/// Helper object to do averaging
