@@ -566,7 +566,25 @@ struct VertEqPropsImpl : public VertEqProps {
 
 	virtual void upscale_pressure (const double* finePressure,
 	                               double* coarsePressure) {
-		// TODO:
+		// allocate memory to hold the pressures outside of the loop
+		vector <double> col_pres (ts.max_vert_res, 0.);
+
+		// upscale each column separately. if we used the EQUIL keyword
+		// in the Eclipse file, then it would calculate the pressures
+		// assuming vertical equilibrium and assign a value from the
+		// correct phase on each side of the oil/water contact. if there
+		// was only one cell, it would create a weighted average for that
+		// cell, which is what we try to recreate here.
+		for (int col = 0; col < ts.number_of_cells; ++col) {
+			// retrieve the pressures for this column in a continguous array
+			up.gather (col, &col_pres[0], &finePressure[0], 1, 0);
+
+			// weight each pressure with the height of the block.
+			const double p = up.dpt_avg (col, &col_pres[0]);
+
+			// assign this as the pressure for this column
+			coarsePressure[col] = p;
+		}
 	}
 
 	virtual void upscale_saturation (const double* fineSaturation,
