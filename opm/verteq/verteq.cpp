@@ -5,6 +5,7 @@
 #include <opm/verteq/topsurf.hpp>
 #include <opm/verteq/verteq.hpp>
 #include <opm/verteq/utility/exc.hpp>
+#include <opm/core/simulator/initState.hpp>
 #include <opm/core/simulator/TwophaseState.hpp>
 #include <opm/core/utility/parameters/ParameterGroup.hpp>
 #include <opm/core/wells.h>
@@ -139,7 +140,20 @@ VertEqImpl::upscale (const TwophaseState& fineScale,
 	// dimension state object to the top grid
 	coarseScale.init (*ts, pr->numPhases ());
 
-	// TODO: set the initial state from the fine-scale state
+	// upscale pressure and saturation to find the initial state of
+	// the two-dimensional domain. we only need to set the pressure
+	// and saturation, the flux is an output field. these methods
+	// are handled by the props class, since it already has access to
+	// the densities and weights.
+	pr->upscale_pressure (&fineScale.pressure ()[0],
+	                      &coarseScale.pressure ()[0]);
+	pr->upscale_saturation (&fineScale.saturation ()[0],
+	                        &coarseScale.saturation ()[0]);
+
+	// use the regular helper method to initialize the face pressure
+	// since it is implemented in the header, we have access to it
+	// even though it is in an anonymous namespace!
+	initFacePressure (this->grid(), coarseScale);
 
 	// update the properties from the initial state (the
 	// simulation object won't call this method before the
