@@ -589,7 +589,43 @@ struct VertEqPropsImpl : public VertEqProps {
 
 	virtual void upscale_saturation (const double* fineSaturation,
 	                                 double* coarseSaturation) {
-		// TODO:
+		// pointer to all porosities in the fine grid
+		const double* fine_poro = fp.porosity ();
+
+		// allocate memory outside of the loop
+		vector <double> phi (ts.max_vert_res, 0.); // fine porosity
+		vector <double> sg  (ts.max_vert_res, 0.); // fine saturation
+		vector <double> pvg (ts.max_vert_res, 0.); // fine pore volume
+
+		// use this object to find the actual number of columns
+		rlw_int colcellpos (ts.number_of_cells, ts.col_cellpos, ts.col_cells);
+
+		// upscale column by column
+		for (int col = 0; col < ts.number_of_cells; ++col) {
+			// porosities for the column. this is the same code as
+			// early in the constructor, but we don't save all this
+			// data because we don't need it very often.
+			up.gather (col, &phi[0], fine_poro, 1, 0);
+
+			// pick out the CO2 saturation from the initial values
+			up.gather (col, &sg[0], fineSaturation, NUM_PHASES, GAS);
+
+			// pore-volume occupied by that one phase is the product of
+			// volume, porosity and saturation; volume/height is part of
+			// the upscaling operator - we assume that every part of the
+			// column has the same area (violation of this assumption may
+			// cause slight mass balance problems)
+			for (int i = 0; i < colcellpos.size (col); ++i) {
+				pvg[i] = phi[i] * sg[i];
+			}
+
+			// get the sum and update output. notice that we only need
+			// the total amount of CO2 in the column; we don't bother
+			// with the assigning the residual brine -- that is done in
+			// the grid update following the initialization.
+			const double col_porevol = up.dpt_avg (col, &pvg[0]);
+			coarseSaturation[col] = col_porevol / upscaled_poro[col];
+		}
 	}
 };
 
