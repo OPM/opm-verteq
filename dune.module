@@ -1,5 +1,6 @@
 Module: opm-verteq
 Description: OPM Vertical Equilibrium library
 Version: 1.0
+Label: 2013.09
 Maintainer: roland.kaufmann@uni.no
 Depends: opm-core (>= 1.0)
