@@ -5,6 +5,7 @@
 // This file is licensed under the GNU General Public License v3.0
 
 #include <string>
+#include <vector>
 
 #ifndef OPM_VERTEQ_VISIBILITY_HPP_INCLUDED
 #include <opm/verteq/visibility.hpp>
@@ -61,6 +62,8 @@ public:
 	 *        of the upscaling.
 	 * @param fullWells Wells list with indices in the three-dimensional
 	 *                  grid. This is typically initialized from a deck.
+	 * @param fullSrc List of volumetric source term for each element
+	 *                in the grid.
 	 * @param gravity Gravity vector (three-dimensional); must contain
 	 *                three elements, whereas the last is for depth.
 	 *                Usually this is {0., 0., Opm::unit::gravity}.
@@ -72,6 +75,7 @@ public:
 	                       const UnstructuredGrid& fullGrid,
 	                       const IncompPropertiesInterface& fullProps,
 	                       const Wells* fullWells,
+	                       const std::vector<double>& fullSrc,
 	                       const double* gravity);
 
 	// virtual destructor, actual functionality relayed to real impl.
@@ -111,6 +115,17 @@ public:
 	 *         object!
 	 */
 	virtual const IncompPropertiesInterface& props () = 0;
+
+	/**
+	 * @brief Accessor method for the upscaled source terms.
+	 *
+	 * This method is inexpensive; upscaling is not done upon every
+	 * invocation.
+	 *
+	 * @return A volumetric flux in the metric units (cubic meters/second)
+	 *        for each grid block in the upscaled grid.
+	 */
+	virtual const std::vector<double>& src () = 0;
 
 	/**
 	 * Create an upscaled view of the domain state.

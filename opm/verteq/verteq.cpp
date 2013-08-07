@@ -3,6 +3,7 @@
 #include <opm/verteq/nav.hpp>
 #include <opm/verteq/props.hpp>
 #include <opm/verteq/topsurf.hpp>
+#include <opm/verteq/upscale.hpp>
 #include <opm/verteq/verteq.hpp>
 #include <opm/verteq/utility/exc.hpp>
 #include <opm/core/simulator/initState.hpp>
@@ -30,6 +31,7 @@ struct VertEqImpl : public VertEq {
 	void init (const UnstructuredGrid& fullGrid,
 	           const IncompPropertiesInterface& fullProps,
 	           const Wells* wells,
+	           const vector<double>& fullSrc,
 	           const double* gravity);
 	// public methods defined in the interface
 	virtual const UnstructuredGrid& grid();
@@ -46,6 +48,12 @@ struct VertEqImpl : public VertEq {
 	 * dimensional grid into the upscaled top surface.
 	 */
 	void translate_wells ();
+
+	// source terms in the upscaled grid
+	vector<double> coarseSrc;
+	void sum_sources (const vector<double>& fullSrc);
+	virtual const vector<double>& src ();
+
 };
 
 VertEq*
@@ -54,10 +62,11 @@ VertEq::create (const string& title,
                 const UnstructuredGrid& fullGrid,
                 const IncompPropertiesInterface& fullProps,
                 const Wells* wells,
+                const vector<double>& fullSrc,
                 const double* gravity) {
 	// we don't provide any parameters to do tuning yet
 	auto_ptr <VertEqImpl> impl (new VertEqImpl ());
-	impl->init (fullGrid, fullProps, wells, gravity);
+	impl->init (fullGrid, fullProps, wells, fullSrc, gravity);
 	return impl.release();
 }
 
@@ -65,6 +74,7 @@ void
 VertEqImpl::init(const UnstructuredGrid& fullGrid,
                  const IncompPropertiesInterface& fullProps,
                  const Wells* wells,
+                 const vector<double>& fullSrc,
                  const double* gravity) {
 	// generate a two-dimensional upscaling as soon as we get the grid
 	ts = auto_ptr <TopSurf> (TopSurf::create (fullGrid));
@@ -72,6 +82,31 @@ VertEqImpl::init(const UnstructuredGrid& fullGrid,
 	// create a separate, but identical, list of wells we can work on
 	w = clone_wells(wells);
 	translate_wells ();
+	// sum the volumetric sources in each column
+	sum_sources (fullSrc);
+}
+
+void
+VertEqImpl::sum_sources (const vector<double>& fineSrc) {
+	// helper object that does most of the heavy lifting
+	VertEqUpscaler up (*ts);
+
+	// there should be one source term (which may be zero) for each block
+	// in the upscaled grid. this may not already be allocated, so ensure
+	// that it has the correct size before we begin.
+	coarseSrc.resize (ts->number_of_cells, 0.);
+
+	// upscale the source term in each column. since the source term is
+	// a volumetric flux, it is a simple addition to get that for the entire
+	// column -- no weighting is needed
+	for (int col = 0; col < ts->number_of_cells; ++col) {
+		coarseSrc[col] = up.sum (col, &fineSrc[0]);
+	}
+}
+
+const vector<double>&
+VertEqImpl::src () {
+	return this->coarseSrc;
 }
 
 void
