@@ -129,6 +129,23 @@ struct VertEqUpscaler {
 	double dpt_avg (int col, const double* val) const;
 
 	/**
+	 * Sum a property such as a source term down the column.
+	 *
+	 * Use this method for upscaling things that are specified independent
+	 * of the block size (source terms is specified as a volumetric flux
+	 * (see computePorevolume in opm/core/utility/miscUtilities.cpp)).
+	 *
+	 * @param col Index of the column for which values should be summed.
+	 *
+	 * @param val Value for each block in the *entire* grid, same as the
+	 *            data argument to gather(). The reason for using this
+	 *            method is to avoid the extra copy.
+	 *
+	 * @return Sum of values for this block, regardless of depth.
+	 */
+	double sum (int col, const double* val) const;
+
+	/**
 	 * Number of rows in a specified column. Use this method to get the
 	 * expected length of arrays containing properties for it. (However, use
 	 * ts.max_vert_res to preallocate space!)
