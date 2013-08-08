@@ -6,6 +6,7 @@
 #include <opm/verteq/upscale.hpp>
 #include <opm/verteq/verteq.hpp>
 #include <opm/verteq/utility/exc.hpp>
+#include <opm/core/pressure/flow_bc.h>
 #include <opm/core/simulator/initState.hpp>
 #include <opm/core/simulator/TwophaseState.hpp>
 #include <opm/core/utility/parameters/ParameterGroup.hpp>
@@ -54,7 +55,7 @@ struct VertEqImpl : public VertEq {
 	vector<double> coarseSrc;
 	void sum_sources (const vector<double>& fullSrc);
 	virtual const vector<double>& src ();
-
+	void assert_noflow (const FlowBoundaryConditions* bcs);
 };
 
 VertEq*
@@ -87,7 +88,31 @@ VertEqImpl::init(const UnstructuredGrid& fullGrid,
 	translate_wells ();
 	// sum the volumetric sources in each column
 	sum_sources (fullSrc);
-	static_cast<void> (fullBcs);
+	// verify that we haven't specified anything than no-flow boundary
+	// conditions (these are the only we support currently)
+	// TODO: This should be replaced with code that reads through the
+	//       grid and map to proper 2D boundary conditions
+	assert_noflow (fullBcs);
+}
+
+static const char* bc_names[] = {
+  "no-flow",
+  "pressure",
+  "flux"
+};
+
+void
+VertEqImpl::assert_noflow (const FlowBoundaryConditions* bcs) {
+	// loop through the number of boundary conditions specified,
+	// checking each individually
+	for (size_t i = 0; i < bcs->nbc; ++i) {
+		if (bcs->type[i] != BC_NOFLOW) {
+			// there is no (portable) format for size_t
+			const unsigned long ndx = static_cast <unsigned long> (i);
+			throw OPM_EXC ("Boundary condition %lu is %s, only no-flow supported",
+			               ndx, bc_names[bcs->type[i]]);
+		}
+	}
 }
 
 void
