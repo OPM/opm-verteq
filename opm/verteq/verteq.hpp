@@ -12,6 +12,7 @@
 #endif /* OPM_VERTEQ_VISIBILITY_HPP_INCLUDED */
 
 // forward declaration
+struct FlowBoundaryConditions;
 struct UnstructuredGrid;
 struct Wells;
 
@@ -64,6 +65,10 @@ public:
 	 *                  grid. This is typically initialized from a deck.
 	 * @param fullSrc List of volumetric source term for each element
 	 *                in the grid.
+	 * @param fullBcs Structure containing a list of boundary conditions
+	 *                (defined in opm/core/pressure/flow_bc.h). Currently,
+	 *                only no-flow boundary conditions are supported (i.e.
+	 *                wells must be the driving force).
 	 * @param gravity Gravity vector (three-dimensional); must contain
 	 *                three elements, whereas the last is for depth.
 	 *                Usually this is {0., 0., Opm::unit::gravity}.
@@ -76,6 +81,7 @@ public:
 	                       const IncompPropertiesInterface& fullProps,
 	                       const Wells* fullWells,
 	                       const std::vector<double>& fullSrc,
+	                       const FlowBoundaryConditions* fullBcs,
 	                       const double* gravity);
 
 	// virtual destructor, actual functionality relayed to real impl.

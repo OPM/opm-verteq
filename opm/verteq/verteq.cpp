@@ -32,6 +32,7 @@ struct VertEqImpl : public VertEq {
 	           const IncompPropertiesInterface& fullProps,
 	           const Wells* wells,
 	           const vector<double>& fullSrc,
+	           const FlowBoundaryConditions* fullBcs,
 	           const double* gravity);
 	// public methods defined in the interface
 	virtual const UnstructuredGrid& grid();
@@ -63,10 +64,11 @@ VertEq::create (const string& title,
                 const IncompPropertiesInterface& fullProps,
                 const Wells* wells,
                 const vector<double>& fullSrc,
+                const FlowBoundaryConditions* fullBcs,
                 const double* gravity) {
 	// we don't provide any parameters to do tuning yet
 	auto_ptr <VertEqImpl> impl (new VertEqImpl ());
-	impl->init (fullGrid, fullProps, wells, fullSrc, gravity);
+	impl->init (fullGrid, fullProps, wells, fullSrc, fullBcs, gravity);
 	return impl.release();
 }
 
@@ -75,6 +77,7 @@ VertEqImpl::init(const UnstructuredGrid& fullGrid,
                  const IncompPropertiesInterface& fullProps,
                  const Wells* wells,
                  const vector<double>& fullSrc,
+                 const FlowBoundaryConditions* fullBcs,
                  const double* gravity) {
 	// generate a two-dimensional upscaling as soon as we get the grid
 	ts = auto_ptr <TopSurf> (TopSurf::create (fullGrid));
@@ -84,6 +87,7 @@ VertEqImpl::init(const UnstructuredGrid& fullGrid,
 	translate_wells ();
 	// sum the volumetric sources in each column
 	sum_sources (fullSrc);
+	static_cast<void> (fullBcs);
 }
 
 void
