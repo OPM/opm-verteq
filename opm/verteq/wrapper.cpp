@@ -56,7 +56,7 @@ VertEqWrapper <Simulator>::VertEqWrapper (
 	                     rock_comp_props,
 	                     *wells_mgr,
 	                     ve->src (),
-	                     bcs,
+	                     ve->bcs (),
 	                     linsolver,
 	                     gravity);
 }

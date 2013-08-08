@@ -134,6 +134,19 @@ public:
 	virtual const std::vector<double>& src () = 0;
 
 	/**
+	 * @brief Accessor method for the list of boundary conditions in
+	 *        the upscaled grid.
+	 *
+	 * @return A structure containing the boundary conditions on the
+	 *         upscaled grid.
+	 *
+	 * @note The lifetime of the returned object is no longer than that
+	 *       of the upscaling object. You do NOT own this object; do not
+	 *       dispose of the pointer.
+	 */
+	virtual const FlowBoundaryConditions* bcs () = 0;
+
+	/**
 	 * Create an upscaled view of the domain state.
 	 *
 	 * This must be done in a separate method since the state is not

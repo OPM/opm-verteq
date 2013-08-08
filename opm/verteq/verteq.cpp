@@ -23,10 +23,14 @@ struct VertEqImpl : public VertEq {
 	// to signal that it has not been initialized properly (probably some
 	// other component which threw an exception)
 	Wells* w;
-	VertEqImpl () : w (0) {}
+	FlowBoundaryConditions* bnd_cond;
+	VertEqImpl () : w (0), bnd_cond (0) {}
 	virtual ~VertEqImpl () {
 		if (w) {
 			destroy_wells (w);
+		}
+		if (bnd_cond) {
+			flow_conditions_destroy (bnd_cond);
 		}
 	}
 	void init (const UnstructuredGrid& fullGrid,
@@ -55,7 +59,10 @@ struct VertEqImpl : public VertEq {
 	vector<double> coarseSrc;
 	void sum_sources (const vector<double>& fullSrc);
 	virtual const vector<double>& src ();
+
+	// boundary conditions
 	void assert_noflow (const FlowBoundaryConditions* bcs);
+	virtual const FlowBoundaryConditions* bcs ();
 };
 
 VertEq*
@@ -93,6 +100,14 @@ VertEqImpl::init(const UnstructuredGrid& fullGrid,
 	// TODO: This should be replaced with code that reads through the
 	//       grid and map to proper 2D boundary conditions
 	assert_noflow (fullBcs);
+	// rely on the fact that no boundary conditions means no-flow
+	bnd_cond = flow_conditions_construct (0);
+}
+
+const FlowBoundaryConditions*
+VertEqImpl::bcs () {
+	// return a set of predefined no-flow conditions
+	return bnd_cond;
 }
 
 static const char* bc_names[] = {
