@@ -80,8 +80,8 @@ struct VertEqProps : public IncompPropertiesInterface {
 	 *
 	 *	The space for the data must have been allocated by the caller.
 	 */
-	virtual void upscale_saturation (const double* finePressure,
-	                                 double* coarsePressure) = 0;
+	virtual void upscale_saturation (const double* fineSaturation,
+	                                 double* coarseSaturation) = 0;
 };
 
 } // namespace Opm
