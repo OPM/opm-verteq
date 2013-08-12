@@ -82,6 +82,25 @@ struct VertEqProps : public IncompPropertiesInterface {
 	 */
 	virtual void upscale_saturation (const double* fineSaturation,
 	                                 double* coarseSaturation) = 0;
+
+	/**
+	 * Downscale to corresponding 3D fine-scale saturations from 2D
+	 * coarse-scale saturations.
+	 *
+	 * @param[in] coarseSaturation
+	 *	Saturation for each phase, and for each column in the coarse grid. The
+	 *	data for each column is kept together, i.e. the phase index varies
+	 *	most quickly.
+	 *
+	 * @param[out] fineSaturation
+	 *	Saturation for each phase, and for each block in the fine grid. The
+	 *	data for each block is kept together, i.e. the phase index varies
+	 *	most quickly.
+	 *
+	 * @note The space for the data must have been allocated by the caller.
+	 */
+	virtual void downscale_saturation (const double* coarseSaturation,
+	                                   double* fineSaturation) = 0;
 };
 
 } // namespace Opm

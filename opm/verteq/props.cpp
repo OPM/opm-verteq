@@ -627,6 +627,97 @@ struct VertEqPropsImpl : public VertEqProps {
 			coarseSaturation[col] = col_porevol / upscaled_poro[col];
 		}
 	}
+
+	virtual void downscale_saturation (const double* coarseSaturation,
+	                                   double* fineSaturation) {
+		// scratch vectors that will hold the minimum and maximum, resp.
+		// CO2 saturation. we could get these from res_xxx_vol, but then
+		// we would have to dig up the porosity for each cell and divide
+		// which is not necessarily faster. if we save this data in the
+		// object itself, it may add to memory pressure; I assume instead
+		// that it is not expensive for the underlaying properties object
+		// to deliver these values on-demand.
+		vector <double> sgr   (ts.max_vert_res * NUM_PHASES, 0.); // residual CO2
+		vector <double> l_swr (ts.max_vert_res * NUM_PHASES, 0.); // 1 - residual brine
+
+		// indexing object that helps us find the cell in a particular column
+		const rlw_int col_cells (ts.number_of_cells, ts.col_cellpos, ts.col_cells);
+
+		// downscale each column individually
+		for (int col = 0; col < ts.number_of_cells; ++col) {
+			// current height of mobile CO2
+			const double gas_hgt = coarseSaturation[col * NUM_PHASES + GAS];
+
+			// make sure residual area of CO2 is up to speed; this ensures
+			// that we're looking at current data in the max_gas_elev member
+			check_res_sat (col, gas_hgt);
+
+			// height of the interface of residual and mobile CO2, resp.
+			const Elevation res_gas = max_gas_elev[col];         // zeta_R
+			const Elevation mob_gas = intf_elev (col, gas_hgt);  // zeta_M
+
+			// query the fine properties for the residual saturations; notice
+			// that only every other item holds the value for CO2
+			const int* ids = col_cells[col];
+			fp.satRange (col_cells.size (col), ids, &sgr[0], &l_swr[0]);
+
+			// fill the number of whole blocks which contain mobile CO2 and
+			// only residual water (maximum CO2)
+			for (int row = 0; row < mob_gas.block (); ++row) {
+				const double gas_sat = l_swr[row * NUM_PHASES + GAS];
+				const int block = ids[row];
+				fineSaturation[block * NUM_PHASES + GAS] = gas_sat;
+				fineSaturation[block * NUM_PHASES + WAT] = 1 - gas_sat;
+			}
+
+			// then fill the number of *whole* blocks which contain only
+			// residual CO2. we start out in the block that was not filled
+			// with mobile CO2, i.e. these only fill the *extra* blocks
+			// where the plume once was but is not anymore
+			for (int row = mob_gas.block(); row < res_gas.block(); ++row) {
+				const double gas_sat = sgr[row * NUM_PHASES + GAS];
+				const int block = ids[row];
+				fineSaturation[block * NUM_PHASES + GAS] = gas_sat;
+				fineSaturation[block * NUM_PHASES + WAT] = 1 - gas_sat;
+			}
+
+			// fill the remaining of the blocks in the column with pure brine
+			for (int row = res_gas.block(); row < col_cells.size (col); ++row) {
+				const int block = ids[row];
+				fineSaturation[block * NUM_PHASES + GAS] = 0.;
+				fineSaturation[block * NUM_PHASES + WAT] = 1.;
+			}
+
+			// adjust the block with the mobile/residual interface with its
+			// fraction of mobile CO2. since we only have a resolution of one
+			// block this sharp interface will only be seen on the visualization
+			// as a slightly differently colored block. only do this if there
+			// actually is a partially filled block.
+			const int intf_block = ids[mob_gas.block ()];
+			if (intf_block != col_cells.size(col)) {
+				// there will already be residual gas in this block thanks to the
+				// loop above; we must only fill a fraction of it with mobile gas,
+				// which is the difference between the maximum and minimum filling
+				const double intf_gas_sat_incr = mob_gas.fraction () *
+				    (l_swr[intf_block * NUM_PHASES + GAS]
+				    - sgr[intf_block * NUM_PHASES + GAS]);
+				fineSaturation[intf_block * NUM_PHASES + GAS] += intf_gas_sat_incr;
+				// we could have written at the brine saturations afterwards to
+				// avoid this extra adjustment, but the data locality will be bad
+				fineSaturation[intf_block * NUM_PHASES + WAT] -= intf_gas_sat_incr;
+			}
+
+			// do the same drill, but with the fraction of where the residual
+			// zone ends (the outermost historical edge of the plume)
+			const int res_block = ids[res_gas.block()];
+			if (res_block != col_cells.size(col)) {
+				const double res_gas_sat_incr = res_gas.fraction() *
+					  sgr[res_block * NUM_PHASES + GAS];
+				fineSaturation[res_block * NUM_PHASES + GAS] += res_gas_sat_incr;
+				fineSaturation[res_block * NUM_PHASES + WAT] -= res_gas_sat_incr;
+			}
+		}
+	}
 };
 
 VertEqProps*
