@@ -36,6 +36,7 @@ VertEqWrapper <Simulator>::VertEqWrapper (
 	                     props,
 	                     wells_manager.c_wells (),
 	                     src,
+	                     bcs,
 	                     gravity);
 
 	// copying the well manager is explicitly forbidden (!)
@@ -55,7 +56,7 @@ VertEqWrapper <Simulator>::VertEqWrapper (
 	                     rock_comp_props,
 	                     *wells_mgr,
 	                     ve->src (),
-	                     bcs,
+	                     ve->bcs (),
 	                     linsolver,
 	                     gravity);
 }

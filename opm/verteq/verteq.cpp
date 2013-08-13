@@ -6,6 +6,7 @@
 #include <opm/verteq/upscale.hpp>
 #include <opm/verteq/verteq.hpp>
 #include <opm/verteq/utility/exc.hpp>
+#include <opm/core/pressure/flow_bc.h>
 #include <opm/core/simulator/initState.hpp>
 #include <opm/core/simulator/TwophaseState.hpp>
 #include <opm/core/utility/parameters/ParameterGroup.hpp>
@@ -22,16 +23,21 @@ struct VertEqImpl : public VertEq {
 	// to signal that it has not been initialized properly (probably some
 	// other component which threw an exception)
 	Wells* w;
-	VertEqImpl () : w (0) {}
+	FlowBoundaryConditions* bnd_cond;
+	VertEqImpl () : w (0), bnd_cond (0) {}
 	virtual ~VertEqImpl () {
 		if (w) {
 			destroy_wells (w);
+		}
+		if (bnd_cond) {
+			flow_conditions_destroy (bnd_cond);
 		}
 	}
 	void init (const UnstructuredGrid& fullGrid,
 	           const IncompPropertiesInterface& fullProps,
 	           const Wells* wells,
 	           const vector<double>& fullSrc,
+	           const FlowBoundaryConditions* fullBcs,
 	           const double* gravity);
 	// public methods defined in the interface
 	virtual const UnstructuredGrid& grid();
@@ -54,6 +60,9 @@ struct VertEqImpl : public VertEq {
 	void sum_sources (const vector<double>& fullSrc);
 	virtual const vector<double>& src ();
 
+	// boundary conditions
+	void assert_noflow (const FlowBoundaryConditions* bcs);
+	virtual const FlowBoundaryConditions* bcs ();
 };
 
 VertEq*
@@ -63,10 +72,11 @@ VertEq::create (const string& title,
                 const IncompPropertiesInterface& fullProps,
                 const Wells* wells,
                 const vector<double>& fullSrc,
+                const FlowBoundaryConditions* fullBcs,
                 const double* gravity) {
 	// we don't provide any parameters to do tuning yet
 	auto_ptr <VertEqImpl> impl (new VertEqImpl ());
-	impl->init (fullGrid, fullProps, wells, fullSrc, gravity);
+	impl->init (fullGrid, fullProps, wells, fullSrc, fullBcs, gravity);
 	return impl.release();
 }
 
@@ -75,6 +85,7 @@ VertEqImpl::init(const UnstructuredGrid& fullGrid,
                  const IncompPropertiesInterface& fullProps,
                  const Wells* wells,
                  const vector<double>& fullSrc,
+                 const FlowBoundaryConditions* fullBcs,
                  const double* gravity) {
 	// generate a two-dimensional upscaling as soon as we get the grid
 	ts = auto_ptr <TopSurf> (TopSurf::create (fullGrid));
@@ -84,6 +95,39 @@ VertEqImpl::init(const UnstructuredGrid& fullGrid,
 	translate_wells ();
 	// sum the volumetric sources in each column
 	sum_sources (fullSrc);
+	// verify that we haven't specified anything than no-flow boundary
+	// conditions (these are the only we support currently)
+	// TODO: This should be replaced with code that reads through the
+	//       grid and map to proper 2D boundary conditions
+	assert_noflow (fullBcs);
+	// rely on the fact that no boundary conditions means no-flow
+	bnd_cond = flow_conditions_construct (0);
+}
+
+const FlowBoundaryConditions*
+VertEqImpl::bcs () {
+	// return a set of predefined no-flow conditions
+	return bnd_cond;
+}
+
+static const char* bc_names[] = {
+  "no-flow",
+  "pressure",
+  "flux"
+};
+
+void
+VertEqImpl::assert_noflow (const FlowBoundaryConditions* bcs) {
+	// loop through the number of boundary conditions specified,
+	// checking each individually
+	for (size_t i = 0; i < bcs->nbc; ++i) {
+		if (bcs->type[i] != BC_NOFLOW) {
+			// there is no (portable) format for size_t
+			const unsigned long ndx = static_cast <unsigned long> (i);
+			throw OPM_EXC ("Boundary condition %lu is %s, only no-flow supported",
+			               ndx, bc_names[bcs->type[i]]);
+		}
+	}
 }
 
 void
