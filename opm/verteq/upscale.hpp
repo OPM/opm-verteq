@@ -54,6 +54,16 @@ struct Elevation : private std::pair <int, double> {
 	 * the amount to include of another property at the same height.
 	 */
 	double fraction () const { return this->second; }
+
+	/**
+	 * Compare whether this elevation is above another elevation.
+	 *
+	 * @param rhs Elevation to compare to. Assumes normalized elevation
+	 *            objects (0 <= fraction < 1).
+	 *
+	 * @return True if this elevation is higher above rhs.
+	 */
+	bool operator< (const Elevation& rhs) const;
 };
 
 /**

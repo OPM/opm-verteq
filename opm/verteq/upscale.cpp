@@ -4,6 +4,25 @@
 
 using namespace Opm;
 
+bool
+Elevation::operator< (const Elevation& rhs) const {
+	const int block_diff = block() - rhs.block();
+	// rhs is in a block above
+	if (block_diff > 0) {
+		return true;
+	}
+	else { /* block_diff <= 0 */
+		// rhs is in the same block
+		if (block_diff == 0) {
+			return fraction() < rhs.fraction();
+		}
+		// rhs is in a block below
+		else {
+			return false;
+		}
+	}
+}
+
 void
 VertEqUpscaler::gather (
 		int col,
