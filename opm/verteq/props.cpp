@@ -485,14 +485,13 @@ struct VertEqPropsImpl : public VertEqProps {
 
 			// heights from top surface to the interface, and to bottom
 			const double intf_hgt = up.eval (col, ts_h[col], intf); // \zeta_T - \zeta_M
-			const double botm_hgt = ts.h_tot[col]; // \zeta_T - \zeta_B
 
 			// the slopes of the pressure curves are different. the distance
 			// between them (at the top for instance) is dependent on where
 			// they intersect (i.e. at the interface between the phases). in
 			// addition, the brine pressure is measured at the bottom, so we
 			// must also add the total height to get down there
-			const double hyd_diff = -gravity * (intf_hgt * dens_diff + botm_hgt * dens_wat);
+			const double hyd_diff = -gravity * (intf_hgt * dens_diff);
 
 			// find the fine-scale element that holds the interface; we already
 			// know the relative index in the column; ask the top surface for
