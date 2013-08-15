@@ -61,6 +61,7 @@
 \newcommand{\tim}{t}        % time
 \newcommand{\ttt}{\tau}     % alt. time (var.)
 \newcommand{\Vel}{U}        % velocity
+\newcommand{\vel}{u}
 \newcommand{\phs}{\alpha}   % generic phase
 \newcommand{\Lev}{\zeta}    % level
 \newcommand{\Top}{T}        % top
@@ -96,6 +97,7 @@
 \newcommand{\snr}{\sr{\nap}}    % residual gas sat.
 \newcommand{\swr}{\sr{\wet}}    % residual brine sat.
 \newcommand{\Velp}{\Vel_\phs}
+\newcommand{\velp}{\vel_\phs}
 \newcommand{\LevT}{\Lev_\Top}
 \newcommand{\LevB}{\Lev_\Bot}
 \newcommand{\LevM}{\Lev_\Mob}
@@ -152,11 +154,27 @@ For each of these phases, we will evolve a conservation equation for immiscible 
 \dvg{ \sum_{\phs} { \Velp } } = 0
 \intertext{where}
 \Hei \Por \Satp = \intg{ \LevB }{ \LevT }{ \por \satp }{ \dph }
+\intertext{and}
+\Velp = \intg{ \LevB }{ \LevT }{ \latr{ \velp } }{ \dph }
 \end{gather}
 
 \section{Upscaled quantities}
 \subsection{Operators}
-We have the ``lateral'' operator~\( \latr{ \hspace{ 0ex } } \):
+We have the ``lateral'' operator~\( \latr{ \hspace{ 0ex } } \) on a vector:
+
+\begin{equation}
+\latr{ \vel } = \begin{pmatrix}
+\vel_x \\
+\vel_y
+\end{pmatrix}, \qquad \mathrm{where\ }
+\vel = \begin{pmatrix}
+\vel_x \\
+\vel_y \\
+\vel_z
+\end{pmatrix}
+\end{equation}
+
+and on a matrix:
 
 \begin{equation}
 \latr{ \prm } = \begin{pmatrix}
@@ -170,7 +188,7 @@ We have the ``lateral'' operator~\( \latr{ \hspace{ 0ex } } \):
 \end{pmatrix}
 \end{equation}
 
-and to get the magnitude of such a lateral tensor, we select the Frobenius norm as operator~\( \magn{ \hspace{ 0ex } } \):
+and to get the magnitude of such a lateral tensor, we select the Frobenius norm as suffix operator~\( \magn{ \hspace{ 0ex } } \):
 
 \begin{equation}
 \magn{ \prm } = \| \latr{ \prm } \|_F = \sqrt{ \prm_{\x\x}^2 + 2\prm_{\x\y}^2 + \prm_{\y\y}^2 }
