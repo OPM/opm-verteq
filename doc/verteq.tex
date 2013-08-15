@@ -463,17 +463,17 @@ And
 \der{ \Rlpw \prime }{ \Satn } &= - \frac{ \krwnr }{ \ddual{ \swr }{ \snr } }
 \end{align}
 
-\subsection{Capillary Pressure}
-We use the pressure on the top surface of the column as the upscaled pressure for \COO, and the pressure at the bottom for the brine. The pressure for each phase is picked from the point where it is supposedly most mobile.
+\subsection{Pressure}
+We use the pressure on the \emph{top surface} of the column as the upscaled pressure for \COO as this is the point where there supposedly is a largest chance of encountering a mobile phase. If we have two pressure unknowns, we could consequently also select the \emph{bottom} as the reference point for brine, but since we have only one unknown for the pressure in the underlaying simulator, it should be picked from the same point for brine as for \COO.
 
 Pressure downward in the column is assumed to be in hydrostatic equilibrium:
 \begin{align}
 \eqlabel{ve:pc:hydro-static}
 \pg \aleft( \h \aright) &= \Pg + \inner{ \grad{ \dph } }{ \grav } \intg{ \h }{ \LevT }{ \dens_{\nap} }{ \dph } \\
-\pw \aleft( \h \aright) &= \Pw - \inner{ \grad{ \dph } }{ \grav } \intg{ \LevB }{ \h }{ \dens_{\wet} }{ \dph } \\
-&= \Pw - \inner{ \grad{ \dph } }{ \grav } \left( \intg{ \LevB }{ \LevT }{ \dens_{\wet} }{ \dph } - \intg{ \h }{ \LevT }{ \dens_{\wet} }{ \dph } \right)
+\pw \aleft( \h \aright) &= \Pw + \inner{ \grad{ \dph } }{ \grav } \intg{ \h }{ \LevT }{ \dens_{\wet} }{ \dph }
 \end{align}
 
+\subsection{Capillary Pressure}
 In \emph{equilibrium} the difference between the pressures should be equal to the entry pressure
 
 \begin{equation}
@@ -485,21 +485,21 @@ If we now insert \eqref[vref]{ve:pc:hydro-static} into each of the terms  on the
 
 \begin{equation}
 \eqlabel{ve:pc:hydrostatic-entry}
-\pe \aleft( \satn \aleft( \h \aright) \aright) = \Pg - \Pw + \inner{ \grad{ \dph } }{ \grav } \left( \intg{ \h }{ \LevT }{ \dens_{\nap} - \dens_{\wet} }{ \dph } + \intg{ \LevB }{ \LevT }{ \dens_{\wet} }{ \dph } \right)
+\pe \aleft( \satn \aleft( \h \aright) \aright) = \Pg - \Pw + \inner{ \grad{ \dph } }{ \grav } \intg{ \h }{ \LevT }{ \dens_{\nap} - \dens_{\wet} }{ \dph }
 \end{equation}
 
 The level where there is equilibrium between the phases is in the interface between them, i.e.~where \( \h = \LevM \). If we insert this into \eqref[vref]{ve:pc:hydrostatic-entry} we get
 
 \begin{equation}
 \eqlabel{ve:pc:upscaled-press-diff}
-\Pc \aleft( \LevM \aright) = \pe \aleft( \at{ \satn }{ \LevM } \aright) - \inner{ \grad{ \dph } }{ \grav } \left( \intg{ \LevM }{ \LevT }{ \dens_{\nap} - \dens_{\wet} }{ \dph } + \intg{ \LevB }{ \LevT }{ \dens_{\wet} }{ \dph } \right)
+\Pc \aleft( \LevM \aright) = \pe \aleft( \at{ \satn }{ \LevM } \aright) - \inner{ \grad{ \dph } }{ \grav } \intg{ \LevM }{ \LevT }{ \dens_{\nap} - \dens_{\wet} }{ \dph }
 \end{equation}
 
 Since we assume incompressible fluids and thus constant densities, we can use the write out the integrals on the right-hand side using the levels themselves:
 
 \begin{equation}
 \eqlabel{ve:pc:incomp-cap}
-\Pc \aleft( \LevM \aright) = \pe \aleft( \at{ \satn }{ \LevM } \aright) - \inner{ \grad{ \dph } }{ \grav } \left( \left( \dens_{\nap} - \dens_{\wet} \right) \left( \LevT - \LevM \right) + \dens_{\wet} \left( \LevT - \LevB \right) \right)
+\Pc \aleft( \LevM \aright) = \pe \aleft( \at{ \satn }{ \LevM } \aright) - \inner{ \grad{ \dph } }{ \grav } \left( \dens_{\nap} - \dens_{\wet} \right) \left( \LevT - \LevM \right)
 \end{equation}
 
 We can take the derivative of \eqref[vref]{ve:pc:upscaled-press-diff}:
