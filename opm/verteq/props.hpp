@@ -61,6 +61,11 @@ struct VertEqProps : public IncompPropertiesInterface {
 	 *	value for pressure, weighted from each of the blocks in the column.
 	 *
 	 *	The space for the data must have been allocated by the caller.
+	 *
+	 * @note
+	 *	To get an upscaled pressure, you must first call upscale_saturation
+	 *	and then upd_res_sat with this result to initialize the brine-co2
+	 *	phase contact correctly. Failure to do so will cause you endless grief.
 	 */
 	virtual void upscale_pressure (const double* finePressure,
 	                               double* coarsePressure) = 0;

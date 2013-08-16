@@ -161,6 +161,12 @@ public:
 	 *                     method has not yet been called.
 	 *
 	 * @see VertEqState
+	 *
+	 * @note
+	 *	This method will make the state you pass "current" in order to
+	 *	calculate various internal quantities. Use this method for
+	 *	initialization and avoid upscaling unrelated states during
+	 *	simulation.
 	 */
 	virtual void upscale (const TwophaseState& fineScale,
 	                      TwophaseState& coarseScale) = 0;

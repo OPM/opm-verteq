@@ -224,10 +224,11 @@ VertEqImpl::upscale (const TwophaseState& fineScale,
 	// and saturation, the flux is an output field. these methods
 	// are handled by the props class, since it already has access to
 	// the densities and weights.
-	pr->upscale_pressure (&fineScale.pressure ()[0],
-	                      &coarseScale.pressure ()[0]);
 	pr->upscale_saturation (&fineScale.saturation ()[0],
 	                        &coarseScale.saturation ()[0]);
+	pr->upd_res_sat (&coarseScale.saturation()[0]);
+	pr->upscale_pressure (&fineScale.pressure ()[0],
+	                      &coarseScale.pressure ()[0]);
 
 	// use the regular helper method to initialize the face pressure
 	// since it is implemented in the header, we have access to it
