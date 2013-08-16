@@ -52,6 +52,10 @@ struct VertEqProps : public IncompPropertiesInterface {
 	/**
 	 * Upscale pressure from fine-scale to coarse-scale.
 	 *
+	 * @param[in] coarseSaturation
+	 *	Saturation for each phase, in each column. This is used to initialize
+	 *	the brine-co2 phase contact properly.
+	 *
 	 * @param[in] finePressure
 	 *	Pressure for each block in the fine grid. There is only one value
 	 *	for pressure, the pressure for hydrostatic equilibrium in each block.
@@ -61,13 +65,9 @@ struct VertEqProps : public IncompPropertiesInterface {
 	 *	value for pressure, weighted from each of the blocks in the column.
 	 *
 	 *	The space for the data must have been allocated by the caller.
-	 *
-	 * @note
-	 *	To get an upscaled pressure, you must first call upscale_saturation
-	 *	and then upd_res_sat with this result to initialize the brine-co2
-	 *	phase contact correctly. Failure to do so will cause you endless grief.
 	 */
-	virtual void upscale_pressure (const double* finePressure,
+	virtual void upscale_pressure (const double* coarseSaturation,
+	                               const double* finePressure,
 	                               double* coarsePressure) = 0;
 
 	/**

@@ -563,26 +563,61 @@ struct VertEqPropsImpl : public VertEqProps {
 		fill (smax, smax + np, 1.);
 	}
 
-	virtual void upscale_pressure (const double* finePressure,
+	virtual void upscale_pressure (const double* coarseSaturation,
+	                               const double* finePressure,
 	                               double* coarsePressure) {
-		// allocate memory to hold the pressures outside of the loop
-		vector <double> col_pres (ts.max_vert_res, 0.);
+		// pressure locations we'll have to relate to
+		static const int    FIRST_BLOCK = 0;    // relative index in the column
+		static const double HALFWAY     = 0.5;  // center of the block
 
-		// upscale each column separately. if we used the EQUIL keyword
-		// in the Eclipse file, then it would calculate the pressures
-		// assuming vertical equilibrium and assign a value from the
-		// correct phase on each side of the oil/water contact. if there
-		// was only one cell, it would create a weighted average for that
-		// cell, which is what we try to recreate here.
-		for (int col = 0; col < ts.number_of_cells; ++col) {
-			// retrieve the pressures for this column in a continguous array
-			up.gather (col, &col_pres[0], &finePressure[0], 1, 0);
+		// incompressible means that the density is the same everywhere
+		// we can thus cache the phase properties outside of the loop
+		const double gas_dens = density ()[GAS];
+		const double wat_dens = density ()[WAT];
 
-			// weight each pressure with the height of the block.
-			const double p = up.dpt_avg (col, &col_pres[0]);
+		// helper object to get the index (into the pressure array) and
+		// the height of elements in a column
+		const rlw_double ts_dz (ts.number_of_cells, ts.col_cellpos, ts.dz);
+		const rlw_int col_cells (ts.number_of_cells, ts.col_cellpos, ts.col_cells);
 
-			// assign this as the pressure for this column
-			coarsePressure[col] = p;
+		// upscale each column separately. assume that something like the
+		// EQUIL keyword has been used in the Eclipse file and that the
+		// pressures are already in equilibrium. thus, we only need to
+		// extract the pressure at the reference point (top surface)
+		for (int col = 0; col < col_cells.cols (); ++col) {
+			// location of the brine-co2 phase contact
+			const double gas_sat = coarseSaturation[col * NUM_PHASES + GAS];
+			const Elevation& intf_lvl = intf_elev (col, gas_sat);
+
+			// what fraction of the first block from the pressure point (halfway)
+			// up to the top surface is of each of the phases? if the interface
+			// is below the first block, or if it is further down than halfway,
+			// then everything, otherwise the fraction (less than 0.5)
+			double gas_frac = (intf_lvl.block () == FIRST_BLOCK) ?
+				min (HALFWAY, intf_lvl.fraction ()) : HALFWAY;
+
+			// id of the upper-most block of this column. if there is no
+			// blocks, then the TopSurf object wouldn't generate a column.
+			const int block_id = col_cells[col][FIRST_BLOCK];
+
+			// height of the uppermost block (twice the distance from the top
+			// to the center
+			const double hgt = ts_dz[col][FIRST_BLOCK];
+
+			// get the pressure in the middle of this block
+			const double mid_pres = finePressure[block_id];
+
+			// pressure at the reference point; adjust hydrostatically for
+			// those phases that are on the way up from the center of the first
+			// block in the column.
+			const double ref_pres = mid_pres - gravity * hgt *
+			    (gas_frac * gas_dens + (HALFWAY - gas_frac) * wat_dens);
+
+			// Eclipse uses non-aquous pressure (see Variable Sets in Formulation
+			// of the Equations in the Technical Description) as the main unknown
+			// in the pressure equation; there is assumed continuity at the
+			// contact, so the pressure at the top should always be a CO2 pressure
+			coarsePressure[col] = ref_pres;
 		}
 	}
 
