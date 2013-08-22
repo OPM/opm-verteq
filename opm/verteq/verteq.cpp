@@ -45,6 +45,8 @@ struct VertEqImpl : public VertEq {
 	virtual const IncompPropertiesInterface& props();
 	virtual void upscale (const TwophaseState& fineScale,
 	                      TwophaseState& coarseScale);
+	virtual void downscale (const TwophaseState &coarseScale,
+	                        TwophaseState &fineScale);
 	virtual void notify (const TwophaseState& coarseScale);
 
 	auto_ptr <TopSurf> ts;
@@ -241,6 +243,24 @@ VertEqImpl::upscale (const TwophaseState& fineScale,
 	// first timestep; it assumes that the state is initialized
 	// accordingly (which is what we do here now)
 	notify (coarseScale);
+}
+
+void
+VertEqImpl::downscale (const TwophaseState &coarseScale,
+                       TwophaseState &fineScale) {
+	// assume that the fineScale storage is already initialized
+	if (!fineScale.pressure().size() == ts->number_of_cells) {
+		throw OPM_EXC ("Fine scale state is not dimensioned correctly");
+	}
+
+	// properties object handle the actual downscaling since it
+	// already has the information about the interface
+	pr->downscale_saturation (&coarseScale.saturation ()[0],
+	                          &fineScale.saturation ()[0]);
+	pr->upd_res_sat (&coarseScale.saturation ()[0]);
+	pr->downscale_pressure (&coarseScale.saturation ()[0],
+	                        &coarseScale.pressure ()[0],
+	                        &fineScale.pressure ()[0]);
 }
 
 void
