@@ -752,6 +752,70 @@ struct VertEqPropsImpl : public VertEqProps {
 			}
 		}
 	}
+
+	virtual void downscale_pressure (const double* coarseSaturation,
+	                                 const double* coarsePressure,
+	                                 double* finePressure) {
+		// pressure locations we'll have to relate to
+		static const double HALFWAY     = 0.5;  // center of the block
+
+		// helper object to get the index (into the pressure array) and
+		// the height of elements in a column
+		const rlw_double ts_h (ts.number_of_cells, ts.col_cellpos, ts.h);
+		const rlw_double ts_dz (ts.number_of_cells, ts.col_cellpos, ts.dz);
+		const rlw_int col_cells (ts.number_of_cells, ts.col_cellpos, ts.col_cells);
+
+		// incompressible means that the density is the same everywhere
+		// we can thus cache the phase properties outside of the loop
+		const double gas_dens = density ()[GAS];
+		const double wat_dens = density ()[WAT];
+
+		for (int col = 0; col < col_cells.cols (); ++col) {
+			// location of the brine-co2 phase contact
+			const double gas_sat = coarseSaturation[col * NUM_PHASES + GAS];
+			const Elevation& intf_lvl = intf_elev (col, gas_sat);
+
+			// get the pressure difference between the phases at top of this column
+			const double sat[NUM_PHASES] = { gas_sat, 1-gas_sat };
+			double pres_diff;
+			capPress (1, sat, &col, &pres_diff, 0);
+
+			// get the reference phase pressure at the top; notice that the CO2
+			// pressure is the largest so we subtract the difference
+			const double gas_ref = coarsePressure[col];
+			const double wat_ref = gas_ref - pres_diff;
+
+			// are we going to include the block with the interface
+			const int incl_intf = intf_lvl.fraction () >= HALFWAY ? 1 : 0;
+			const int num_gas_rows = intf_lvl.block () + incl_intf;
+
+			// write all CO2 pressure blocks
+			for (int row = 0; row < num_gas_rows; ++row) {
+				// height of block center
+				const double hgt = ts_h[col][row] + HALFWAY * ts_dz[col][row];
+
+				// hydrostatically get the pressure for this block
+				const double gas_pres = gas_ref + gravity * hgt * gas_dens;
+				const int block = col_cells[col][row];
+
+				// (scatter) write to output array
+				finePressure[block] = gas_pres;
+			}
+
+			// then write the brine blocks, starting where we left off
+			for (int row = num_gas_rows; row < col_cells.size (col); ++row) {
+				// height of block center
+				const double hgt = ts_h[col][row] + HALFWAY * ts_dz[col][row];
+
+				// hydrostatically get the pressure for this block
+				const double wat_pres = wat_ref + gravity * hgt * wat_dens;
+				const int block = col_cells[col][row];
+
+				// (scatter) write to output array
+				finePressure[block] = wat_pres;
+			}
+		}
+	}
 };
 
 VertEqProps*

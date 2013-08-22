@@ -106,6 +106,28 @@ struct VertEqProps : public IncompPropertiesInterface {
 	 */
 	virtual void downscale_saturation (const double* coarseSaturation,
 	                                   double* fineSaturation) = 0;
+
+	/**
+	 * Downscale to corresponding 3D fine-scale pressure from 2D coarse-scale
+	 * pressure.
+	 *
+	 * @param[in] coarseSaturation
+	 *	Saturation for each phase, in each column. This is used to determine
+	 *	the brine-co2 phase contact properly.
+	 *
+	 * @param[in] coarsePressure
+	 *	Pressure of the CO2 phase at the top of each column.
+	 *
+	 * @param[out] finePressure
+	 *	Pressure in each block in the fine-scale grid. The order of the cells
+	 *	is given by the fine_col/col_cells members of the TopSurf object which
+	 *	was passed the constructor.
+	 *
+	 * @note The space for the data must have been allocated by the caller.
+	 */
+	virtual void downscale_pressure (const double* coarseSaturation,
+	                                 const double* coarsePressure,
+	                                 double* finePressure) = 0;
 };
 
 } // namespace Opm
