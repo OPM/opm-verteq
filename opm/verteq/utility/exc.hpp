@@ -21,9 +21,11 @@
 #define OPM_VERTEQ_PRIVATE SYMBOL_IS_LOCALDEF
 
 // enable printf-style attribute for MSVC
-#if _MSC_VER >= 1400
-#define _USE_ATTRIBUTES_FOR_SAL 1
-#include <sal.h>
+#ifdef _MSC_VER
+#  if _MSC_VER >= 1400
+#    define _USE_ATTRIBUTES_FOR_SAL 1
+#    include <sal.h>
+#  endif
 #endif
 
 namespace Opm {
@@ -54,8 +56,10 @@ struct OPM_VERTEQ_PUBLIC Base
 	 *	more boost::error_info objects may be added).
 	 */
 	virtual Base& operator () (
-#if _MSC_VER >= 1400
+#ifdef _MSC_VER
+#  if _MSC_VER >= 1400
 		__format_string
+#  endif
 #endif
 			char const* fmt, ...)
 	// there is an implicit this parameter at the start, so the format
