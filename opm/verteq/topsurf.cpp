@@ -12,6 +12,7 @@
 #include <cstdlib> // div
 #include <map>
 #include <memory> // auto_ptr
+#include <vector>
 #include <utility> // pair
 
 using namespace boost;

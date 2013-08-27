@@ -7,6 +7,7 @@
 #include <algorithm> // fill
 #include <cmath> // sqrt
 #include <memory> // auto_ptr
+#include <vector>
 using namespace Opm;
 using namespace std;
 
