@@ -10,6 +10,7 @@
 #include <algorithm> // min, max
 #include <climits> // INT_MIN, INT_MAX
 #include <cstdlib> // div
+#include <iosfwd> // ostream
 #include <map>
 #include <memory> // auto_ptr
 #include <vector>
@@ -21,12 +22,12 @@ using namespace std;
 
 /// Helper routine to print of map
 template <typename T, typename U>
-void dump_map (const map<T, U>& m) {
+void dump_map (ostream& os, const map<T, U>& m) {
 	for (typename map<T, U>::const_iterator it = m.begin(); it != m.end(); ++it) {
-		boost::io::ios_all_saver state (cerr);
-		cerr << it->first << ":\t";
+		boost::io::ios_all_saver state (os);
+		os << it->first << ":\t";
 		state.restore ();
-		cerr << it->second << endl;
+		os << it->second << endl;
 	}
 }
 
@@ -337,7 +338,7 @@ private:
 			}
 			/*
 			cerr << "elem: " << three_d.coord(top_cell_glob_id) << ':' << endl;
-			dump_map (classifier);
+			dump_map (cerr, classifier);
 			*/
 
 			// cannot handle degenerate grids without top face properly
