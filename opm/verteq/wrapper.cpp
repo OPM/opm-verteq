@@ -5,6 +5,7 @@
 #include <opm/core/simulator/SimulatorIncompTwophase.hpp>
 #include <opm/core/simulator/SimulatorReport.hpp>
 #include <opm/core/simulator/TwophaseState.hpp>
+#include <opm/core/utility/Event.hpp>
 #include <opm/core/wells/WellsManager.hpp>
 using namespace std;
 
@@ -84,7 +85,8 @@ VertEqWrapper <SimulatorIncompTwophase>::run(
 
 	// make the state "active", so that it push its changes to the
 	// ve model whenever an update is completed and its state is stable
-	sim->connect_timestep <VertEqState, &VertEqState::notify> (upscaled_state);
+	sim->timestep_completed ()
+	    .add <VertEqState, &VertEqState::notify> (upscaled_state);
 
 	// we "reuse" the well state for the three-dimensional grid;
 	// it is a value object which is created once based on the
