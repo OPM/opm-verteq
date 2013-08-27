@@ -728,15 +728,14 @@ private:
 	}
 };
 
-TopSurf*
-TopSurf::create (const UnstructuredGrid& fine_grid) {
-	// I *know* that we are not supposed to use auto_ptr anymore, but
-	// it works in both C++98 and C++11 and is the only common way to
-	// transfer the object out of the smart pointer afterwards
+// I *know* that we are not supposed to use auto_ptr anymore, but
+// it works in both C++98 and C++11 and is the only common way to
+// transfer the object out of the smart pointer afterwards
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+TopSurf*
+TopSurf::create (const UnstructuredGrid& fine_grid) {
 	auto_ptr <TopSurf> ts (new TopSurf);
-#pragma GCC diagnostic pop
 
 	// outsource the entire construction to a builder object
 	TopSurfBuilder (fine_grid, *(ts.get ()));
@@ -745,6 +744,7 @@ TopSurf::create (const UnstructuredGrid& fine_grid) {
 	// client owns pointer to constructed grid from this point
 	return ts.release ();
 }
+#pragma GCC diagnostic pop
 
 TopSurf::TopSurf ()
 	: col_cells (0)
