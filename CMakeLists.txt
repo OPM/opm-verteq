@@ -48,7 +48,6 @@ macro (config_hook)
 endmacro (config_hook)
 
 macro (prereqs_hook)
-	include (UseVisibility)
 endmacro (prereqs_hook)
 
 macro (sources_hook)
