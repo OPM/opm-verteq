@@ -45,6 +45,8 @@ struct VertEqImpl : public VertEq {
 	virtual const IncompPropertiesInterface& props();
 	virtual void upscale (const TwophaseState& fineScale,
 	                      TwophaseState& coarseScale);
+	virtual void downscale (const TwophaseState &coarseScale,
+	                        TwophaseState &fineScale);
 	virtual void notify (const TwophaseState& coarseScale);
 
 	auto_ptr <TopSurf> ts;
@@ -224,10 +226,12 @@ VertEqImpl::upscale (const TwophaseState& fineScale,
 	// and saturation, the flux is an output field. these methods
 	// are handled by the props class, since it already has access to
 	// the densities and weights.
-	pr->upscale_pressure (&fineScale.pressure ()[0],
-	                      &coarseScale.pressure ()[0]);
 	pr->upscale_saturation (&fineScale.saturation ()[0],
 	                        &coarseScale.saturation ()[0]);
+	pr->upd_res_sat (&coarseScale.saturation ()[0]);
+	pr->upscale_pressure (&coarseScale.saturation ()[0],
+	                      &fineScale.pressure ()[0],
+	                      &coarseScale.pressure ()[0]);
 
 	// use the regular helper method to initialize the face pressure
 	// since it is implemented in the header, we have access to it
@@ -239,6 +243,24 @@ VertEqImpl::upscale (const TwophaseState& fineScale,
 	// first timestep; it assumes that the state is initialized
 	// accordingly (which is what we do here now)
 	notify (coarseScale);
+}
+
+void
+VertEqImpl::downscale (const TwophaseState &coarseScale,
+                       TwophaseState &fineScale) {
+	// assume that the fineScale storage is already initialized
+	if (!fineScale.pressure().size() == ts->number_of_cells) {
+		throw OPM_EXC ("Fine scale state is not dimensioned correctly");
+	}
+
+	// properties object handle the actual downscaling since it
+	// already has the information about the interface
+	pr->downscale_saturation (&coarseScale.saturation ()[0],
+	                          &fineScale.saturation ()[0]);
+	pr->upd_res_sat (&coarseScale.saturation ()[0]);
+	pr->downscale_pressure (&coarseScale.saturation ()[0],
+	                        &coarseScale.pressure ()[0],
+	                        &fineScale.pressure ()[0]);
 }
 
 void

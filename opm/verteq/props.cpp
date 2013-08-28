@@ -486,14 +486,13 @@ struct VertEqPropsImpl : public VertEqProps {
 
 			// heights from top surface to the interface, and to bottom
 			const double intf_hgt = up.eval (col, ts_h[col], intf); // \zeta_T - \zeta_M
-			const double botm_hgt = ts.h_tot[col]; // \zeta_T - \zeta_B
 
 			// the slopes of the pressure curves are different. the distance
 			// between them (at the top for instance) is dependent on where
 			// they intersect (i.e. at the interface between the phases). in
 			// addition, the brine pressure is measured at the bottom, so we
 			// must also add the total height to get down there
-			const double hyd_diff = -gravity * (intf_hgt * dens_diff + botm_hgt * dens_wat);
+			const double hyd_diff = -gravity * (intf_hgt * dens_diff);
 
 			// find the fine-scale element that holds the interface; we already
 			// know the relative index in the column; ask the top surface for
@@ -565,26 +564,61 @@ struct VertEqPropsImpl : public VertEqProps {
 		fill (smax, smax + np, 1.);
 	}
 
-	virtual void upscale_pressure (const double* finePressure,
+	virtual void upscale_pressure (const double* coarseSaturation,
+	                               const double* finePressure,
 	                               double* coarsePressure) {
-		// allocate memory to hold the pressures outside of the loop
-		vector <double> col_pres (ts.max_vert_res, 0.);
+		// pressure locations we'll have to relate to
+		static const int    FIRST_BLOCK = 0;    // relative index in the column
+		static const double HALFWAY     = 0.5;  // center of the block
 
-		// upscale each column separately. if we used the EQUIL keyword
-		// in the Eclipse file, then it would calculate the pressures
-		// assuming vertical equilibrium and assign a value from the
-		// correct phase on each side of the oil/water contact. if there
-		// was only one cell, it would create a weighted average for that
-		// cell, which is what we try to recreate here.
-		for (int col = 0; col < ts.number_of_cells; ++col) {
-			// retrieve the pressures for this column in a continguous array
-			up.gather (col, &col_pres[0], &finePressure[0], 1, 0);
+		// incompressible means that the density is the same everywhere
+		// we can thus cache the phase properties outside of the loop
+		const double gas_dens = density ()[GAS];
+		const double wat_dens = density ()[WAT];
 
-			// weight each pressure with the height of the block.
-			const double p = up.dpt_avg (col, &col_pres[0]);
+		// helper object to get the index (into the pressure array) and
+		// the height of elements in a column
+		const rlw_double ts_dz (ts.number_of_cells, ts.col_cellpos, ts.dz);
+		const rlw_int col_cells (ts.number_of_cells, ts.col_cellpos, ts.col_cells);
 
-			// assign this as the pressure for this column
-			coarsePressure[col] = p;
+		// upscale each column separately. assume that something like the
+		// EQUIL keyword has been used in the Eclipse file and that the
+		// pressures are already in equilibrium. thus, we only need to
+		// extract the pressure at the reference point (top surface)
+		for (int col = 0; col < col_cells.cols (); ++col) {
+			// location of the brine-co2 phase contact
+			const double gas_sat = coarseSaturation[col * NUM_PHASES + GAS];
+			const Elevation& intf_lvl = intf_elev (col, gas_sat);
+
+			// what fraction of the first block from the pressure point (halfway)
+			// up to the top surface is of each of the phases? if the interface
+			// is below the first block, or if it is further down than halfway,
+			// then everything, otherwise the fraction (less than 0.5)
+			double gas_frac = (intf_lvl.block () == FIRST_BLOCK) ?
+				min (HALFWAY, intf_lvl.fraction ()) : HALFWAY;
+
+			// id of the upper-most block of this column. if there is no
+			// blocks, then the TopSurf object wouldn't generate a column.
+			const int block_id = col_cells[col][FIRST_BLOCK];
+
+			// height of the uppermost block (twice the distance from the top
+			// to the center
+			const double hgt = ts_dz[col][FIRST_BLOCK];
+
+			// get the pressure in the middle of this block
+			const double mid_pres = finePressure[block_id];
+
+			// pressure at the reference point; adjust hydrostatically for
+			// those phases that are on the way up from the center of the first
+			// block in the column.
+			const double ref_pres = mid_pres - gravity * hgt *
+			    (gas_frac * gas_dens + (HALFWAY - gas_frac) * wat_dens);
+
+			// Eclipse uses non-aquous pressure (see Variable Sets in Formulation
+			// of the Equations in the Technical Description) as the main unknown
+			// in the pressure equation; there is assumed continuity at the
+			// contact, so the pressure at the top should always be a CO2 pressure
+			coarsePressure[col] = ref_pres;
 		}
 	}
 
@@ -626,6 +660,161 @@ struct VertEqPropsImpl : public VertEqProps {
 			// the grid update following the initialization.
 			const double col_porevol = up.dpt_avg (col, &pvg[0]);
 			coarseSaturation[col] = col_porevol / upscaled_poro[col];
+		}
+	}
+
+	virtual void downscale_saturation (const double* coarseSaturation,
+	                                   double* fineSaturation) {
+		// scratch vectors that will hold the minimum and maximum, resp.
+		// CO2 saturation. we could get these from res_xxx_vol, but then
+		// we would have to dig up the porosity for each cell and divide
+		// which is not necessarily faster. if we save this data in the
+		// object itself, it may add to memory pressure; I assume instead
+		// that it is not expensive for the underlaying properties object
+		// to deliver these values on-demand.
+		vector <double> sgr   (ts.max_vert_res * NUM_PHASES, 0.); // residual CO2
+		vector <double> l_swr (ts.max_vert_res * NUM_PHASES, 0.); // 1 - residual brine
+
+		// indexing object that helps us find the cell in a particular column
+		const rlw_int col_cells (ts.number_of_cells, ts.col_cellpos, ts.col_cells);
+
+		// downscale each column individually
+		for (int col = 0; col < ts.number_of_cells; ++col) {
+			// current height of mobile CO2
+			const double gas_hgt = coarseSaturation[col * NUM_PHASES + GAS];
+
+			// make sure residual area of CO2 is up to speed; this ensures
+			// that we're looking at current data in the max_gas_elev member
+			check_res_sat (col, gas_hgt);
+
+			// height of the interface of residual and mobile CO2, resp.
+			const Elevation res_gas = max_gas_elev[col];         // zeta_R
+			const Elevation mob_gas = intf_elev (col, gas_hgt);  // zeta_M
+
+			// query the fine properties for the residual saturations; notice
+			// that only every other item holds the value for CO2
+			const int* ids = col_cells[col];
+			fp.satRange (col_cells.size (col), ids, &sgr[0], &l_swr[0]);
+
+			// fill the number of whole blocks which contain mobile CO2 and
+			// only residual water (maximum CO2)
+			for (int row = 0; row < mob_gas.block (); ++row) {
+				const double gas_sat = l_swr[row * NUM_PHASES + GAS];
+				const int block = ids[row];
+				fineSaturation[block * NUM_PHASES + GAS] = gas_sat;
+				fineSaturation[block * NUM_PHASES + WAT] = 1 - gas_sat;
+			}
+
+			// then fill the number of *whole* blocks which contain only
+			// residual CO2. we start out in the block that was not filled
+			// with mobile CO2, i.e. these only fill the *extra* blocks
+			// where the plume once was but is not anymore
+			for (int row = mob_gas.block(); row < res_gas.block(); ++row) {
+				const double gas_sat = sgr[row * NUM_PHASES + GAS];
+				const int block = ids[row];
+				fineSaturation[block * NUM_PHASES + GAS] = gas_sat;
+				fineSaturation[block * NUM_PHASES + WAT] = 1 - gas_sat;
+			}
+
+			// fill the remaining of the blocks in the column with pure brine
+			for (int row = res_gas.block(); row < col_cells.size (col); ++row) {
+				const int block = ids[row];
+				fineSaturation[block * NUM_PHASES + GAS] = 0.;
+				fineSaturation[block * NUM_PHASES + WAT] = 1.;
+			}
+
+			// adjust the block with the mobile/residual interface with its
+			// fraction of mobile CO2. since we only have a resolution of one
+			// block this sharp interface will only be seen on the visualization
+			// as a slightly differently colored block. only do this if there
+			// actually is a partially filled block.
+			const int intf_block = ids[mob_gas.block ()];
+			if (intf_block != col_cells.size(col)) {
+				// there will already be residual gas in this block thanks to the
+				// loop above; we must only fill a fraction of it with mobile gas,
+				// which is the difference between the maximum and minimum filling
+				const double intf_gas_sat_incr = mob_gas.fraction () *
+				    (l_swr[intf_block * NUM_PHASES + GAS]
+				    - sgr[intf_block * NUM_PHASES + GAS]);
+				fineSaturation[intf_block * NUM_PHASES + GAS] += intf_gas_sat_incr;
+				// we could have written at the brine saturations afterwards to
+				// avoid this extra adjustment, but the data locality will be bad
+				fineSaturation[intf_block * NUM_PHASES + WAT] -= intf_gas_sat_incr;
+			}
+
+			// do the same drill, but with the fraction of where the residual
+			// zone ends (the outermost historical edge of the plume)
+			const int res_block = ids[res_gas.block()];
+			if (res_block != col_cells.size(col)) {
+				const double res_gas_sat_incr = res_gas.fraction() *
+					  sgr[res_block * NUM_PHASES + GAS];
+				fineSaturation[res_block * NUM_PHASES + GAS] += res_gas_sat_incr;
+				fineSaturation[res_block * NUM_PHASES + WAT] -= res_gas_sat_incr;
+			}
+		}
+	}
+
+	virtual void downscale_pressure (const double* coarseSaturation,
+	                                 const double* coarsePressure,
+	                                 double* finePressure) {
+		// pressure locations we'll have to relate to
+		static const double HALFWAY     = 0.5;  // center of the block
+
+		// helper object to get the index (into the pressure array) and
+		// the height of elements in a column
+		const rlw_double ts_h (ts.number_of_cells, ts.col_cellpos, ts.h);
+		const rlw_double ts_dz (ts.number_of_cells, ts.col_cellpos, ts.dz);
+		const rlw_int col_cells (ts.number_of_cells, ts.col_cellpos, ts.col_cells);
+
+		// incompressible means that the density is the same everywhere
+		// we can thus cache the phase properties outside of the loop
+		const double gas_dens = density ()[GAS];
+		const double wat_dens = density ()[WAT];
+
+		for (int col = 0; col < col_cells.cols (); ++col) {
+			// location of the brine-co2 phase contact
+			const double gas_sat = coarseSaturation[col * NUM_PHASES + GAS];
+			const Elevation& intf_lvl = intf_elev (col, gas_sat);
+
+			// get the pressure difference between the phases at top of this column
+			const double sat[NUM_PHASES] = { gas_sat, 1-gas_sat };
+			double pres_diff;
+			capPress (1, sat, &col, &pres_diff, 0);
+
+			// get the reference phase pressure at the top; notice that the CO2
+			// pressure is the largest so we subtract the difference
+			const double gas_ref = coarsePressure[col];
+			const double wat_ref = gas_ref - pres_diff;
+
+			// are we going to include the block with the interface
+			const int incl_intf = intf_lvl.fraction () >= HALFWAY ? 1 : 0;
+			const int num_gas_rows = intf_lvl.block () + incl_intf;
+
+			// write all CO2 pressure blocks
+			for (int row = 0; row < num_gas_rows; ++row) {
+				// height of block center
+				const double hgt = ts_h[col][row] + HALFWAY * ts_dz[col][row];
+
+				// hydrostatically get the pressure for this block
+				const double gas_pres = gas_ref + gravity * hgt * gas_dens;
+				const int block = col_cells[col][row];
+
+				// (scatter) write to output array
+				finePressure[block] = gas_pres;
+			}
+
+			// then write the brine blocks, starting where we left off
+			for (int row = num_gas_rows; row < col_cells.size (col); ++row) {
+				// height of block center
+				const double hgt = ts_h[col][row] + HALFWAY * ts_dz[col][row];
+
+				// hydrostatically get the pressure for this block
+				const double wat_pres = wat_ref + gravity * hgt * wat_dens;
+				const int block = col_cells[col][row];
+
+				// (scatter) write to output array
+				finePressure[block] = wat_pres;
+			}
 		}
 	}
 };

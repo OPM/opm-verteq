@@ -161,9 +161,39 @@ public:
 	 *                     method has not yet been called.
 	 *
 	 * @see VertEqState
+	 *
+	 * @note
+	 *	This method will make the state you pass "current" in order to
+	 *	calculate various internal quantities. Use this method for
+	 *	initialization and avoid upscaling unrelated states during
+	 *	simulation.
 	 */
 	virtual void upscale (const TwophaseState& fineScale,
 	                      TwophaseState& coarseScale) = 0;
+
+	/**
+	 * Report the fine-scale state of the simulation which corresponds
+	 * to the current coarse-scale state.
+	 *
+	 * @param coarseScale[in]
+	 *	State maintained by the underlaying (2D) simulator.
+	 *
+	 * @param fineScale[out]
+	 *	Object that will receive the corresponding state for the original
+	 *	domain. This should be the same object which was passed to
+	 *	initialization, to be overwritten.
+	 *
+	 * @note
+	 *	This method will make the state you pass "current" in order to
+	 *	calculate various internal quantities. Use this method for
+	 *	reporting after a timestep and avoid downscaling unrelated
+	 *  states during simulation.
+	 *
+	 * @note
+	 *	The facepressure and faceflux members are currently ignored.
+	 */
+	virtual void downscale (const TwophaseState& coarseScale,
+	                        TwophaseState& fineScale) = 0;
 
 	/**
 	 * Update the internal variables based on the state.
