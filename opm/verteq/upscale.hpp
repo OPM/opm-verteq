@@ -31,13 +31,13 @@ struct Elevation : private std::pair <int, double> {
 	/**
 	 * Initialize an elevation carrier from its parts.
 	 *
-	 * @param block Number of whole blocks skipped before the height.
+	 * @param aBlock Number of whole blocks skipped before the height.
 	 *
-	 * @param fraction Fractional part of the last block. The invariant
+	 * @param aFraction Fractional part of the last block. The invariant
 	 *                 0. <= fraction < 1. should be observed.
 	 */
-	Elevation (int block, double fraction)
-	  : std::pair <int, double> (block, fraction) {
+	Elevation (int aBlock, double aFraction)
+	  : std::pair <int, double> (aBlock, aFraction) {
 	}
 
 	/**

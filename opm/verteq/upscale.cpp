@@ -43,12 +43,12 @@ VertEqUpscaler::sum (
 	const int* fine_ndx = col_cells[col];
 
 	// loop through each block in the column, accumulating as we go
-	double sum = 0.;
+	double the_sum = 0.;
 	for (int row = 0; row < col_cells.size (col); ++row) {
-		sum += val[fine_ndx[row]];
+		the_sum += val[fine_ndx[row]];
 	}
 
-	return sum;
+	return the_sum;
 }
 
 void

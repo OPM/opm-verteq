@@ -10,8 +10,10 @@
 #include <algorithm> // min, max
 #include <climits> // INT_MIN, INT_MAX
 #include <cstdlib> // div
+#include <iosfwd> // ostream
 #include <map>
 #include <memory> // auto_ptr
+#include <vector>
 #include <utility> // pair
 
 using namespace boost;
@@ -20,12 +22,12 @@ using namespace std;
 
 /// Helper routine to print of map
 template <typename T, typename U>
-void dump_map (const map<T, U>& m) {
+void dump_map (ostream& os, const map<T, U>& m) {
 	for (typename map<T, U>::const_iterator it = m.begin(); it != m.end(); ++it) {
-		boost::io::ios_all_saver state (cerr);
-		cerr << it->first << ":\t";
+		boost::io::ios_all_saver state (os);
+		os << it->first << ":\t";
 		state.restore ();
-		cerr << it->second << endl;
+		os << it->second << endl;
 	}
 }
 
@@ -336,7 +338,7 @@ private:
 			}
 			/*
 			cerr << "elem: " << three_d.coord(top_cell_glob_id) << ':' << endl;
-			dump_map (classifier);
+			dump_map (cerr, classifier);
 			*/
 
 			// cannot handle degenerate grids without top face properly
@@ -726,15 +728,14 @@ private:
 	}
 };
 
-TopSurf*
-TopSurf::create (const UnstructuredGrid& fine_grid) {
-	// I *know* that we are not supposed to use auto_ptr anymore, but
-	// it works in both C++98 and C++11 and is the only common way to
-	// transfer the object out of the smart pointer afterwards
+// I *know* that we are not supposed to use auto_ptr anymore, but
+// it works in both C++98 and C++11 and is the only common way to
+// transfer the object out of the smart pointer afterwards
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+TopSurf*
+TopSurf::create (const UnstructuredGrid& fine_grid) {
 	auto_ptr <TopSurf> ts (new TopSurf);
-#pragma GCC diagnostic pop
 
 	// outsource the entire construction to a builder object
 	TopSurfBuilder (fine_grid, *(ts.get ()));
@@ -743,6 +744,7 @@ TopSurf::create (const UnstructuredGrid& fine_grid) {
 	// client owns pointer to constructed grid from this point
 	return ts.release ();
 }
+#pragma GCC diagnostic pop
 
 TopSurf::TopSurf ()
 	: col_cells (0)
