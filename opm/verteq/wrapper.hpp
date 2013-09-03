@@ -98,6 +98,16 @@ struct OPM_VERTEQ_PUBLIC VertEqWrapper {
 	 */
 	Event& timestep_completed ();
 
+	/**
+	 * Notify the simulator that a callback has an interest in reading
+	 * for reporting purposes the contents of the state argument that
+	 * was passed to the run() method. The simulator will then flush
+	 * any internal state which is currently not reflected in it.
+	 *
+	 * @see Opm::SimulatorIncompTwophase::sync
+	 */
+	void sync ();
+
 private:
 	// vertical equilibrium model
 	VertEq* ve;
@@ -110,6 +120,14 @@ private:
 
 	// list of handlers for timestep notifications
 	std::unique_ptr <EventSource> timestep_callbacks;
+
+	// current state of any simulation we are doing
+	TwophaseState* fineState;
+	TwophaseState* coarseState;
+
+	// flag that determines whether we have synced or not
+	bool syncDone;
+	void resetSyncFlag ();
 };
 
 } /* namespace Opm */
