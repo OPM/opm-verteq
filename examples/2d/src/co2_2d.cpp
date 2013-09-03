@@ -22,7 +22,7 @@ using namespace Opm;
 using namespace Opm::parameter;
 using namespace std;
 
-int main (int argc, char *argv[]) {
+int main (int argc, char *argv[]) try {
 	// read parameters from command-line
 	ParameterGroup param (argc, argv, false);
 
@@ -73,3 +73,8 @@ int main (int argc, char *argv[]) {
 	// done
 	return 0;
 }
+catch (const std::exception &e) {
+    std::cerr << "Program threw an exception: " << e.what() << "\n";
+    throw;
+}
+
