@@ -27,7 +27,8 @@ VertEqWrapper <Simulator>::VertEqWrapper (
 	// if the sim. ctor throws
 	: ve (0)
 	, wells_mgr (0)
-	, sim (0) {
+	, sim (0)
+	, timestep_callbacks (new EventSource ()) {
 
 	// VE model that is injected in between the fine-scale
 	// model that is sent to us, and the simulator
@@ -62,6 +63,11 @@ VertEqWrapper <Simulator>::VertEqWrapper (
 	                     gravity);
 }
 
+template <typename Simulator> Event&
+VertEqWrapper <Simulator>::timestep_completed () {
+	return *timestep_callbacks;
+}
+
 template <typename Simulator>
 VertEqWrapper <Simulator>::~VertEqWrapper () {
 	delete sim;
@@ -87,6 +93,12 @@ VertEqWrapper <SimulatorIncompTwophase>::run(
 	// ve model whenever an update is completed and its state is stable
 	sim->timestep_completed ()
 	    .add <VertEqState, &VertEqState::notify> (upscaled_state);
+
+	// add everyone that has registered at us to be notified by the
+	// inner simulator as well (on our behalf); this daisy chains the
+	// list of callbacks
+	sim->timestep_completed ()
+	    .add <EventSource, &EventSource::signal> (*timestep_callbacks);
 
 	// we "reuse" the well state for the three-dimensional grid;
 	// it is a value object which is created once based on the

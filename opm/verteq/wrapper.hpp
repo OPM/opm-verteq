@@ -5,6 +5,7 @@
 // This file is licensed under the GNU General Public License v3.0
 
 #include <vector>
+#include <memory> // unique_ptr
 
 #ifndef OPM_VERTEQ_VISIBILITY_HPP_INCLUDED
 #include <opm/verteq/visibility.hpp>
@@ -18,6 +19,8 @@ struct FlowBoundaryConditions;
 namespace Opm {
 
 namespace parameter { class ParameterGroup; }
+class Event;
+class EventSource;
 class IncompPropertiesInterface;
 class RockCompressibility;
 class WellsManager;
@@ -85,6 +88,16 @@ struct OPM_VERTEQ_PUBLIC VertEqWrapper {
 		TwophaseState& state,
 		WellState& well_state);
 
+	/**
+	 * Event that is signaled every time the simulator has completed a
+	 * timestep.
+	 *
+	 * @return Reference to the event object where callbacks can be registered.
+	 *
+	 * @see Opm::SimulatorIncompTwophase::timestep_completed
+	 */
+	Event& timestep_completed ();
+
 private:
 	// vertical equilibrium model
 	VertEq* ve;
@@ -94,6 +107,9 @@ private:
 
 	// underlaying simulator to use for 2D
 	Simulator* sim;
+
+	// list of handlers for timestep notifications
+	std::unique_ptr <EventSource> timestep_callbacks;
 };
 
 } /* namespace Opm */
