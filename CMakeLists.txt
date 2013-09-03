@@ -44,7 +44,11 @@ include (${project}-prereqs)
 include (CMakeLists_files.cmake)
 
 macro (config_hook)
-#	opm_need_version_of ("dune-common")
+	# be extra strict in newer modules
+	if (CXX_COMPAT_GCC)
+		set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wextra -pedantic")
+		string (STRIP "${CMAKE_CXX_FLAGS}" CMAKE_CXX_FLAGS)
+	endif ()
 endmacro (config_hook)
 
 macro (prereqs_hook)
