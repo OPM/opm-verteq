@@ -562,6 +562,9 @@ struct VertEqPropsImpl : public VertEqProps {
 		const int np = n * numPhases ();
 		fill (smin, smin + np, 0.);
 		fill (smax, smax + np, 1.);
+
+		// this is just to avoid warnings about unused variable
+		static_cast <void> (cells);
 	}
 
 	virtual void upscale_pressure (const double* coarseSaturation,

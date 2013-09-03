@@ -76,6 +76,10 @@ VertEq::create (const string& title,
                 const vector<double>& fullSrc,
                 const FlowBoundaryConditions* fullBcs,
                 const double* gravity) {
+	// this is just to avoid warnings about unused variables
+	static_cast <void> (title);
+	static_cast <void> (args);
+
 	// we don't provide any parameters to do tuning yet
 	auto_ptr <VertEqImpl> impl (new VertEqImpl ());
 	impl->init (fullGrid, fullProps, wells, fullSrc, fullBcs, gravity);
