@@ -14,6 +14,10 @@
 #include <opm/verteq/topsurf.hpp>
 #endif /* OPM_VERTEQ_TOPSURF_HPP_INCLUDED */
 
+#ifndef OPM_VERTEQ_RUNLEN_HPP_INCLUDED
+#include <opm/verteq/utility/runlen.hpp>
+#endif /* OPM_VERTEQ_RUNLEN_HPP_INCLUDED */
+
 namespace Opm {
 
 /**
@@ -121,10 +125,10 @@ struct VertEqUpscaler {
 	 * @param val Integrand values for each block in the column.
 	 *
 	 * @param res Array that will receive the result. The caller must
-	 *            preallocate storage and pass it as input here. A good idea
-	 *            is to use the view of a column from an rlw_double.
+	 *            preallocate storage and pass it as input here. Only
+	 *            the column specified with col will be filled.
 	 */
-	void wgt_dpt (int col, const double* val, double* res) const;
+	void wgt_dpt (int col, const double* val, rlw_double& res) const;
 
 	/**
 	 * Depth-average of a property discretized for each block.
@@ -185,7 +189,7 @@ struct VertEqUpscaler {
 	 * @return Depth-weighted value of the property from the top down to
 	 *         the specified height.
 	 */
-	double eval (int col, const double* dpt, const Elevation zeta) const;
+	double eval (int col, const rlw_double& dpt, const Elevation zeta) const;
 
 	/**
 	 * Find the elevation where an integrated property has a certain value.

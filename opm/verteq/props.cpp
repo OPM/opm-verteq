@@ -141,7 +141,7 @@ struct VertEqPropsImpl : public VertEqProps {
 		// representing the volume of residual CO2; the remainder becomes
 		// the mobile CO2 volume
 		const double gas_vol = upscaled_poro[col] * gas_sat // \Phi * S_g
-		                     + up.eval (col, res_gas_dpt[col], max_gas_elev[col]);
+		                     + up.eval (col, res_gas_dpt, max_gas_elev[col]);
 
 		// lookup to find the height that gives this mobile volume
 		const Elevation zeta_M = up.find (col, mob_mix_dpt[col], gas_vol);
@@ -300,9 +300,9 @@ struct VertEqPropsImpl : public VertEqProps {
 
 			// weight the relative depth factor (how close are we towards a
 			// completely filled column) with the volume portions
-			up.wgt_dpt (col, &res_gas_col[0], &res_gas_dpt[col][0]);
-			up.wgt_dpt (col, &mob_mix_col[0], &mob_mix_dpt[col][0]);
-			up.wgt_dpt (col, &res_gas_col[0], &res_wat_dpt[col][0]);
+			up.wgt_dpt (col, &res_gas_col[0], res_gas_dpt);
+			up.wgt_dpt (col, &mob_mix_col[0], mob_mix_dpt);
+			up.wgt_dpt (col, &res_gas_col[0], res_wat_dpt);
 
 			// now, when we queried the saturation ranges, we got back the min.
 			// and max. sat., and when there is min. of one, then there should
@@ -348,9 +348,9 @@ struct VertEqPropsImpl : public VertEqProps {
 			}
 
 			// integrate the derivate to get the upscaled rel. perm.
-			up.wgt_dpt (col, prm_gas_col, &prm_gas_int[col][0]);
-			up.wgt_dpt (col, prm_wat_col, &prm_wat_int[col][0]);
-			up.wgt_dpt (col, prm_res_col, &prm_res_int[col][0]);
+			up.wgt_dpt (col, prm_gas_col, prm_gas_int);
+			up.wgt_dpt (col, prm_wat_col, prm_wat_int);
+			up.wgt_dpt (col, prm_res_col, prm_res_int);
 		}
 	}
 
@@ -413,7 +413,7 @@ struct VertEqPropsImpl : public VertEqProps {
 
 			// rel.perm. for CO2 at this location; simply look up in the
 			// table of integrated rel.perm. changes by depth
-			const double Krg = up.eval (col, prm_gas_int[col], intf);
+			const double Krg = up.eval (col, prm_gas_int, intf);
 
 			// registered level of maximum CO2 sat. (where there is at least
 			// residual CO2
@@ -421,8 +421,8 @@ struct VertEqPropsImpl : public VertEqProps {
 
 			// rel.perm. for brine at this location; notice that all of
 			// our expressions uses the CO2 saturation as parameter
-			const double Krw = 1 - (up.eval (col, prm_res_int[col], res_lvl)
-			                       +up.eval (col, prm_wat_int[col], intf));
+			const double Krw = 1 - (up.eval (col, prm_res_int, res_lvl)
+			                       +up.eval (col, prm_wat_int, intf));
 
 			// assign to output
 			kr[i * NUM_PHASES + GAS] = Krg;
@@ -431,16 +431,16 @@ struct VertEqPropsImpl : public VertEqProps {
 			// was derivatives requested?
 			if (dkrds) {
 				// volume available for the mobile liquid/gas: \phi (1-s_{w,r}-s_{g,r})
-				const double mob_vol = up.eval (col, mob_mix_vol[col], intf);
+				const double mob_vol = up.eval (col, mob_mix_vol, intf);
 
 				// rel.perm. change for CO2: K^{-1} k_|| k_{r,g}(1-s_{w,r})
-				const double prm_chg_gas = up.eval (col, prm_gas[col], intf);
+				const double prm_chg_gas = up.eval (col, prm_gas, intf);
 
 				// possible change in CO2 rel.perm.
 				const double dKrg_dSg = upscaled_poro[col] / mob_vol * prm_chg_gas;
 
 				// rel.perm. change for brine: K^{-1} k_|| k_{r,w}(s_{g,r})
-				const double prm_chg_wat = up.eval (col, prm_wat[col], intf);
+				const double prm_chg_wat = up.eval (col, prm_wat, intf);
 
 				// possible change in brine rel.perm.
 				const double dKrw_dSg = -upscaled_poro[col] / mob_vol * prm_chg_wat;
@@ -485,7 +485,7 @@ struct VertEqPropsImpl : public VertEqProps {
 			const Elevation intf = intf_elev (col, Sg); // zeta_M
 
 			// heights from top surface to the interface, and to bottom
-			const double intf_hgt = up.eval (col, ts_h[col], intf); // \zeta_T - \zeta_M
+			const double intf_hgt = up.eval (col, ts_h, intf); // \zeta_T - \zeta_M
 
 			// the slopes of the pressure curves are different. the distance
 			// between them (at the top for instance) is dependent on where
@@ -523,7 +523,7 @@ struct VertEqPropsImpl : public VertEqProps {
 			// interested in the derivatives of the capillary pressure as well?
 			if (dpcds) {
 				// volume available for the mobile liquid/gas: \phi (1-s_{w,r}-s_{g,r})
-				const double mob_vol = up.eval (col, mob_mix_vol[col], intf);
+				const double mob_vol = up.eval (col, mob_mix_vol, intf);
 
 				// change of interface height per of upscaled saturation; d\zeta_M/dS
 				const double dh_dSg = -(ts.h_tot[col] * upscaled_poro[col]) / mob_vol;
