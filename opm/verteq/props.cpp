@@ -214,6 +214,7 @@ struct VertEqPropsImpl : public VertEqProps {
 
 		// allocate memory to store results for faster lookup later
 		upscaled_poro.resize (ts.number_of_cells);
+		upscaled_absperm.resize (ts.number_of_cells * PERM_MATRIX_2D);
 
 		// buffers that holds intermediate values for each column;
 		// pre-allocate to avoid doing that inside the loop
