@@ -70,16 +70,16 @@ PRESSURE
 
 SCHEDULE
 
--- injector is at (1,1,1..2), producer is at (3,1,1..2), at 1000m depth
+-- injector is at (1,1,1..1), producer is at (3,1,2..2), at 1000m depth
 -- both wells have a radius of 0.2m
 WELSPECS
-	inj		FIELD	1	1	1000	0	/
-	prod	FIELD	3	1	1000	0	/
+	inj 	grp		1	1	1000	OIL  	/
+	prod	grp		3	1	1000	WATER	/
 /
 
 COMPDAT
-	inj		0	0	1	2	OPEN	1	0	0.2		/
-	prod	0	0	1	2	OPEN	1	0	0.2		/
+	inj 	0	0	1	1	OPEN	1	0	0.2		/
+	prod	0	0	2	2	OPEN	1	0	0.2		/
 /
 
 -- inject water with a constant rate of 1 cubic meters per day
