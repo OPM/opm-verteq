@@ -1,4 +1,5 @@
 #include <opm/verteq/upscale.hpp>
+#include <opm/verteq/utility/exc.hpp>
 #include <opm/verteq/utility/runlen.hpp>
 #include <cmath> // floor
 
@@ -189,6 +190,12 @@ VertEqUpscaler::find (
 	// *end* of the block, like what is in up_bnd
 	int bot_ndx = num_rows (col) - 1;
 	double bot_val = dpt[bot_ndx]; // target <=bot_val
+
+	// input sanity check
+	if (! ((top_val <= target) && (target <= bot_val))) {
+		throw OPM_EXC ("Target %g out of range [%g, %g]",
+		               target, top_val, bot_val);
+	}
 
 	// search until we have a solution; as the search space get tighter
 	// and tighter, we must eventually end up with a solution if the
