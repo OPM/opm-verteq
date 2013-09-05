@@ -303,7 +303,7 @@ struct VertEqPropsImpl : public VertEqProps {
 			// completely filled column) with the volume portions
 			up.wgt_dpt (col, &res_gas_col[0], res_gas_dpt);
 			up.wgt_dpt (col, &mob_mix_col[0], mob_mix_dpt);
-			up.wgt_dpt (col, &res_gas_col[0], res_wat_dpt);
+			up.wgt_dpt (col, &res_wat_col[0], res_wat_dpt);
 
 			// now, when we queried the saturation ranges, we got back the min.
 			// and max. sat., and when there is min. of one, then there should
