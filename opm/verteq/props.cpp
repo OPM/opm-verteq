@@ -659,12 +659,11 @@ struct VertEqPropsImpl : public VertEqProps {
 			}
 
 			// get the sum and update output. notice that we only need
-			// the total amount of CO2 in the column; we don't bother
-			// with the assigning the residual brine -- that is done in
-			// the grid update following the initialization.
+			// the total amount of CO2 in the column
 			const double col_porevol = up.dpt_avg (col, &pvg[0]);
 			const double upscaled_Sg = col_porevol / upscaled_poro[col];
 			coarseSaturation[col * NUM_PHASES + GAS] = upscaled_Sg;
+			coarseSaturation[col * NUM_PHASES + WAT] = 1 - upscaled_Sg;
 		}
 	}
 
