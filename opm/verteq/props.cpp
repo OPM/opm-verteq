@@ -663,7 +663,8 @@ struct VertEqPropsImpl : public VertEqProps {
 			// with the assigning the residual brine -- that is done in
 			// the grid update following the initialization.
 			const double col_porevol = up.dpt_avg (col, &pvg[0]);
-			coarseSaturation[col] = col_porevol / upscaled_poro[col];
+			const double upscaled_Sg = col_porevol / upscaled_poro[col];
+			coarseSaturation[col * NUM_PHASES + GAS] = upscaled_Sg;
 		}
 	}
 
