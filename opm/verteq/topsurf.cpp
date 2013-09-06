@@ -67,6 +67,10 @@ struct TopSurfBuilder {
 	// this vector is first valid after create_faces() have been done.
 	vector <int> faces;
 
+	// logical Cartesian indices for items in the fine grid. we need our
+	// own copy of this since not all grids provide it
+	vector <int> fine_global;
+
 	TopSurfBuilder (const UnstructuredGrid& from, TopSurf& into)
 		// link to the fine grid for the duration of the construction
 		: fine_grid (from)
@@ -76,12 +80,28 @@ struct TopSurfBuilder {
 
 		// extract dimensions from the source grid
 		, three_d (fine_grid)
-		, two_d (three_d.project ()) {
+		, two_d (three_d.project ())
+		, fine_global (from.number_of_cells, 0)	{
 
 		// check that the fine grid contains structured information;
 		// this is essential to mapping cells to columns
-		if (!fine_grid.global_cell) {
+		const int prod = std::accumulate(&fine_grid.cartdims[0],
+		                                  &fine_grid.cartdims[fine_grid.dimensions],
+		                                  1,
+		                                  std::multiplies<int>());
+		if (!prod) {
 			throw OPM_EXC ("Find grid is not (logically) structured");
+		}
+
+		// some cartesian grids (most notably those generated with
+		// create_grid_cart{2,3}d) have no global cell
+		if (!fine_grid.global_cell) {
+			std::iota (fine_global.begin(), fine_global.end(), 0);
+		}
+		else {
+			std::copy (fine_grid.global_cell,
+			           fine_grid.global_cell + fine_grid.number_of_cells,
+			           fine_global.begin ());
 		}
 
 		// create frame of the new top surface
@@ -137,7 +157,7 @@ private:
 		for (int fine_elem = 0; fine_elem != fine_grid.number_of_cells; ++fine_elem) {
 			// get the cartesian index for this cell; this is the cell
 			// number in a grid that also includes the inactive cells
-			const Cart3D::elem_t cart_ndx = fine_grid.global_cell [fine_elem];
+			const Cart3D::elem_t cart_ndx = fine_global [fine_elem];
 
 			// deconstruct the cartesian index into (i,j,k) constituents;
 			// the i-index moves fastest, as this is Fortran-indexing
@@ -218,7 +238,7 @@ private:
 		ts.fine_col = new int [fine_grid.number_of_cells];
 		for (int cell = 0; cell < fine_grid.number_of_cells; ++cell) {
 			// get the Cartesian index for this element
-			const Cart3D::elem_t cart_ndx = fine_grid.global_cell[cell];
+			const Cart3D::elem_t cart_ndx = fine_global[cell];
 			const Coord3D ijk = three_d.coord (cart_ndx);
 
 			// get the id of the column in which this element now belongs
