@@ -484,8 +484,11 @@ private:
 
 						// select primary or secondary neighbour collection based on
 						// the direction of the face relative to the center of the
-						// element, see discussion above
-						const bool is_primary = s->dir () == Dir::DEC;
+						// element, see discussion above. if the vector from the center
+						// to the face points in the INC direction (i.e. this is an INC
+						// face), then that vector is aligned with the right-normal of
+						// the face, and this node is the primary.
+						const bool is_primary = s->dir () == Dir::INC;
 						vector <int>& neighbour = is_primary ? pri_elem : sec_elem;
 						vector <int>& other = is_primary ? sec_elem : pri_elem;
 
