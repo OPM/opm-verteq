@@ -56,6 +56,13 @@ struct Coord2D {
 	int i() const { return m_i; }
 	int j() const { return m_j; }
 
+	/**
+	 * Compare two coordinates
+	 */
+	bool operator == (const Coord2D& rhs) const {
+		return (m_i == rhs.m_i) && (m_j == rhs.m_j);
+	}
+
 protected:
 	const int m_i;
 	const int m_j;
@@ -199,6 +206,13 @@ struct Side {
 	static const Side* begin () { return &ALL[0]; }
 	static const Side* end () { return &ALL[COUNT]; }
 
+	/**
+	 * Comparison of two sides
+	 */
+	bool operator == (const Side <Dim>& rhs) const {
+		return (m_dim == rhs.m_dim) && (m_dir == rhs.m_dir);
+	}
+
 protected:
 	const Dim m_dim;
 	const Dir m_dir;
@@ -259,6 +273,13 @@ struct Corn3D : public Corn2D {
 	}
 
 	Dir k() const { return m_k; }
+
+	/**
+	 * Compare two corners
+	 */
+	bool operator == (const Corn3D& rhs) const {
+		return (m_i == rhs.m_i) && (m_j == rhs.m_j) && (m_k == rhs.m_k);
+	}
 
 protected:
 	const Dir m_k;
