@@ -150,6 +150,9 @@ struct Dim3D : public Dim2D {
 	Dim3D (const Dim3D& rhs) : Dim2D (rhs.val) { }
 	bool operator == (const Dim2D& rhs) const { return val == rhs.val; }
 
+	// allow X and Y to work in 3D too
+	Dim3D (const Dim2D& rhs) : Dim2D (rhs) {}
+
 protected:
 	Dim3D (int i) : Dim2D (i) { }
 
