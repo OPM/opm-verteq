@@ -26,6 +26,9 @@ include (UseOptimization)
 # use tricks to build faster
 include (UseFastBuilds)
 
+# ignore known variables
+include (OpmKnown)
+
 # this will usually be probed by Findopm-core or specified on the
 # command-line. we set it here because this example project is located
 # where the heuristics don't find it. if you use this as a template,
