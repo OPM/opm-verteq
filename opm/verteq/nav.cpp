@@ -80,6 +80,10 @@ ostream& operator << (ostream& os, const Side2D& s) {
 	return (os << s.dim () << s.dir ()); // e.g. "I-"
 }
 
+ostream& operator << (ostream& os, const Side3D& s) {
+	return (os << s.dim () << s.dir ()); // e.g. "I-"
+}
+
 ostream& operator << (ostream& os, const Corn3D& c) {
 	// e.g. "(I-,J+)"
 	return (os << '(' << DIM_NAMES[Dim3D::X.val] << c.i () << ','

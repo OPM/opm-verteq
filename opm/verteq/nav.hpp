@@ -228,6 +228,10 @@ protected:
 typedef Side <Dim2D> Side2D;
 typedef Side <Dim3D> Side3D;
 
+// forward declaration of stream operator present in library
+std::ostream& operator << (std::ostream& os, const Side2D& s);
+std::ostream& operator << (std::ostream& os, const Side3D& s);
+
 // standalone constants for sides that we use; we call them 'up' and
 // 'down' so that U and D are mnemonics, in contrast to 'top' and 'bottom'
 // where the 'b' would conflict with 'back'.
