@@ -169,7 +169,8 @@ protected:
 /**
  * Value type that addresses sides in a n-dimensional grid cell.
  * A side is identified by a dimensions and a direction in that
- * dimension.
+ * dimension. The side will be located in that direction in that
+ * dimension from the center of the cell.
  */
 template <typename Dim>
 struct Side {
