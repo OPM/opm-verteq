@@ -552,10 +552,14 @@ private:
 		const int LINE_NODES = Dim1D::COUNT * Dir::COUNT;
 		const int num_corns = LINE_NODES * active_faces;
 
+		// number of element neighbours for each face. this is always 2,
+		// the reason for not using the number is to make it searchable
+		const int NEIGHBOURS = 2;
+
 		// allocate memory; this will be freed in the TopSurf destructor
 		ts.face_nodes = new int [num_corns];
 		ts.face_nodepos = new int [active_faces + 1];
-		ts.face_cells = new int [2 * active_faces];
+		ts.face_cells = new int [NEIGHBOURS * active_faces];
 		ts.cell_faces = new int [num_sides];
 		ts.cell_facepos = new int [ts.number_of_cells + 1];
 		ts.cell_facetag = new int [num_sides];
@@ -585,8 +589,8 @@ private:
 				// bottom surface.
 
 				// neighbours should already be stored in the right orientation
-				ts.face_cells[face_glob_id + 0] = pri_elem[cart_face];
-				ts.face_cells[face_glob_id + 1] = sec_elem[cart_face];
+				ts.face_cells[NEIGHBOURS * face_glob_id + 0] = pri_elem[cart_face];
+				ts.face_cells[NEIGHBOURS * face_glob_id + 1] = sec_elem[cart_face];
 			}
 		}
 		ts.face_nodepos[ts.number_of_faces] = LINE_NODES * ts.number_of_faces;
