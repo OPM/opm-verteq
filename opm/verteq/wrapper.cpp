@@ -161,6 +161,6 @@ VertEqWrapper <Simulator>::sync () {
 // instantiations that should be done and put in the library
 // (and no other will be possible because they are missing the
 // code which is provided in this compilation unit).
-template class VertEqWrapper <SimulatorIncompTwophase>;
+template struct VertEqWrapper <SimulatorIncompTwophase>;
 
 } /* namespace Opm */
