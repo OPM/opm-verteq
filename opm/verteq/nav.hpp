@@ -79,7 +79,7 @@ protected:
 };
 
 // forward declaration
-template <typename Dim > class Side;
+template <typename Dim > struct Side;
 
 /// Type-safe enumeration of axis directions.
 struct Dir {
@@ -105,7 +105,7 @@ protected:
 	/// Private constructor to avoid initialization outside domain
 	Dir (int i) : val (i) { }
 
-	template <typename Dim> friend class Side;
+	template <typename Dim> friend struct Side;
 
 	friend std::ostream& operator << (std::ostream& os, const Dir& d);
 };
@@ -134,7 +134,7 @@ struct Dim2D : public Dim1D {
 protected:
 	Dim2D (int i) : val (i) { }
 
-	friend class Side <Dim2D>;
+	friend struct Side <Dim2D>;
 
 	friend std::ostream& operator << (std::ostream& os, const Dim2D& d);
 };
@@ -153,7 +153,7 @@ struct Dim3D : public Dim2D {
 protected:
 	Dim3D (int i) : Dim2D (i) { }
 
-	friend class Side <Dim3D>;
+	friend struct Side <Dim3D>;
 };
 
 /**

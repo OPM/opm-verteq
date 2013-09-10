@@ -19,7 +19,7 @@ struct FlowBoundaryConditions;
 namespace Opm {
 
 namespace parameter { class ParameterGroup; }
-class Event;
+struct Event;
 class EventSource;
 class IncompPropertiesInterface;
 class RockCompressibility;

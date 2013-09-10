@@ -18,11 +18,11 @@ struct Wells;
 
 namespace Opm {
 
-struct IncompPropertiesInterface;
-struct TwophaseState;
+class IncompPropertiesInterface;
+class TwophaseState;
 
 namespace parameter {
-struct ParameterGroup;
+class ParameterGroup;
 } // namespace parameter
 
 /**
