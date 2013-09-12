@@ -13,6 +13,7 @@
 #include <iosfwd> // ostream
 #include <map>
 #include <memory> // auto_ptr
+#include <numeric> // accumulate, iota
 #include <vector>
 #include <utility> // pair
 
