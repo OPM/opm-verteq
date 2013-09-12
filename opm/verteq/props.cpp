@@ -214,6 +214,7 @@ struct VertEqPropsImpl : public VertEqProps {
 
 		// allocate memory to store results for faster lookup later
 		upscaled_poro.resize (ts.number_of_cells);
+		upscaled_absperm.resize (ts.number_of_cells * PERM_MATRIX_2D);
 
 		// buffers that holds intermediate values for each column;
 		// pre-allocate to avoid doing that inside the loop
@@ -302,7 +303,7 @@ struct VertEqPropsImpl : public VertEqProps {
 			// completely filled column) with the volume portions
 			up.wgt_dpt (col, &res_gas_col[0], res_gas_dpt);
 			up.wgt_dpt (col, &mob_mix_col[0], mob_mix_dpt);
-			up.wgt_dpt (col, &res_gas_col[0], res_wat_dpt);
+			up.wgt_dpt (col, &res_wat_col[0], res_wat_dpt);
 
 			// now, when we queried the saturation ranges, we got back the min.
 			// and max. sat., and when there is min. of one, then there should
@@ -658,11 +659,11 @@ struct VertEqPropsImpl : public VertEqProps {
 			}
 
 			// get the sum and update output. notice that we only need
-			// the total amount of CO2 in the column; we don't bother
-			// with the assigning the residual brine -- that is done in
-			// the grid update following the initialization.
+			// the total amount of CO2 in the column
 			const double col_porevol = up.dpt_avg (col, &pvg[0]);
-			coarseSaturation[col] = col_porevol / upscaled_poro[col];
+			const double upscaled_Sg = col_porevol / upscaled_poro[col];
+			coarseSaturation[col * NUM_PHASES + GAS] = upscaled_Sg;
+			coarseSaturation[col * NUM_PHASES + WAT] = 1 - upscaled_Sg;
 		}
 	}
 

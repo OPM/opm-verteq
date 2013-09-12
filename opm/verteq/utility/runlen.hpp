@@ -177,7 +177,7 @@ struct RunLenData : public RunLenView <T> {
         // number of elements. note that there is only one new
         // operation is the parameter list, so there is no leakage if
         // an out-of-memory exception is thrown.
-        : RunLenView <T> (number, pos_ptr, new T [pos_ptr [number+1]]) {
+        : RunLenView <T> (number, pos_ptr, new T [pos_ptr [number]]) {
     }
 
     ~RunLenData () {
