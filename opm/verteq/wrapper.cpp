@@ -64,7 +64,7 @@ VertEqWrapper <Simulator>::VertEqWrapper (
 	                     ve->src (),
 	                     ve->bcs (),
 	                     linsolver,
-	                     gravity);
+	                     ve->gravity ());
 }
 
 template <typename Simulator> Event&

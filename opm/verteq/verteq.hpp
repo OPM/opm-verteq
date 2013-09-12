@@ -82,7 +82,7 @@ public:
 	                       const Wells* fullWells,
 	                       const std::vector<double>& fullSrc,
 	                       const FlowBoundaryConditions* fullBcs,
-	                       const double* gravity);
+	                       const double* fullGravity);
 
 	// virtual destructor, actual functionality relayed to real impl.
 	virtual ~VertEq () {}
@@ -145,6 +145,19 @@ public:
 	 *       dispose of the pointer.
 	 */
 	virtual const FlowBoundaryConditions* bcs () = 0;
+
+	/**
+	 * @brief Gravity that should be used in the upscaled, two-
+	 *        dimensional model.
+	 *
+	 * @return Pointer to an array of two double, describing the
+	 *         gravity in x- and y- directions (z has been upscaled away).
+	 *
+	 * @note The lifetime of the returned array is no longer than that
+	 *       of the upscaling object. You do NOT own this pointer and
+	 *       should NOT dispose of it.
+	 */
+	virtual const double* gravity () = 0;
 
 	/**
 	 * Create an upscaled view of the domain state.
