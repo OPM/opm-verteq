@@ -40,6 +40,9 @@ list (APPEND MAIN_SOURCE_FILES
 # originally generated with the command:
 # find tests -name '*.cpp' -a ! -wholename '*/not-unit/*' -printf '\t%p\n' | sort
 list (APPEND TEST_SOURCE_FILES
+	tests/test_nav.cpp
+	tests/test_runlen.cpp
+	tests/test_topsurf.cpp
 	)
 
 # originally generated with the command:

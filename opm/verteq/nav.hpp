@@ -56,6 +56,13 @@ struct Coord2D {
 	int i() const { return m_i; }
 	int j() const { return m_j; }
 
+	/**
+	 * Compare two coordinates
+	 */
+	bool operator == (const Coord2D& rhs) const {
+		return (m_i == rhs.m_i) && (m_j == rhs.m_j);
+	}
+
 protected:
 	const int m_i;
 	const int m_j;
@@ -150,6 +157,9 @@ struct Dim3D : public Dim2D {
 	Dim3D (const Dim3D& rhs) : Dim2D (rhs.val) { }
 	bool operator == (const Dim2D& rhs) const { return val == rhs.val; }
 
+	// allow X and Y to work in 3D too
+	Dim3D (const Dim2D& rhs) : Dim2D (rhs) {}
+
 protected:
 	Dim3D (int i) : Dim2D (i) { }
 
@@ -159,7 +169,8 @@ protected:
 /**
  * Value type that addresses sides in a n-dimensional grid cell.
  * A side is identified by a dimensions and a direction in that
- * dimension.
+ * dimension. The side will be located in that direction in that
+ * dimension from the center of the cell.
  */
 template <typename Dim>
 struct Side {
@@ -196,6 +207,13 @@ struct Side {
 	static const Side* begin () { return &ALL[0]; }
 	static const Side* end () { return &ALL[COUNT]; }
 
+	/**
+	 * Comparison of two sides
+	 */
+	bool operator == (const Side <Dim>& rhs) const {
+		return (m_dim == rhs.m_dim) && (m_dir == rhs.m_dir);
+	}
+
 protected:
 	const Dim m_dim;
 	const Dir m_dir;
@@ -210,6 +228,10 @@ protected:
 // specializations for the dimensions we work with
 typedef Side <Dim2D> Side2D;
 typedef Side <Dim3D> Side3D;
+
+// forward declaration of stream operator present in library
+std::ostream& operator << (std::ostream& os, const Side2D& s);
+std::ostream& operator << (std::ostream& os, const Side3D& s);
 
 // standalone constants for sides that we use; we call them 'up' and
 // 'down' so that U and D are mnemonics, in contrast to 'top' and 'bottom'
@@ -256,6 +278,13 @@ struct Corn3D : public Corn2D {
 	}
 
 	Dir k() const { return m_k; }
+
+	/**
+	 * Compare two corners
+	 */
+	bool operator == (const Corn3D& rhs) const {
+		return (m_i == rhs.m_i) && (m_j == rhs.m_j) && (m_k == rhs.m_k);
+	}
 
 protected:
 	const Dir m_k;

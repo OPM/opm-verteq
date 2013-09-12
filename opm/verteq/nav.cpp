@@ -41,6 +41,16 @@ const Side <Dim2D> Side <Dim2D>::ALL[] = {
 	Side (Dim2D::Y, Dir::INC)  // J+
 };
 
+template <>
+const Side <Dim3D> Side <Dim3D>::ALL[] = {
+	Side (Dim2D::X, Dir::DEC), // I-
+	Side (Dim2D::X, Dir::INC), // I+
+	Side (Dim2D::Y, Dir::DEC), // J-
+	Side (Dim2D::Y, Dir::INC), // J+
+	Side (Dim3D::Z, Dir::DEC), // K-
+	Side (Dim3D::Z, Dir::INC)  // K+
+};
+
 // sides that exists as standalone constants
 const Side3D UP   (Dim3D::Z, Dir::DEC);
 const Side3D DOWN (Dim3D::Z, Dir::INC);
@@ -67,6 +77,10 @@ ostream& operator << (ostream& os, const Dim2D& d) {
 }
 
 ostream& operator << (ostream& os, const Side2D& s) {
+	return (os << s.dim () << s.dir ()); // e.g. "I-"
+}
+
+ostream& operator << (ostream& os, const Side3D& s) {
 	return (os << s.dim () << s.dir ()); // e.g. "I-"
 }
 
