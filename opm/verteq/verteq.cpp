@@ -7,7 +7,14 @@
 #include <opm/verteq/verteq.hpp>
 #include <opm/verteq/utility/exc.hpp>
 #include <opm/core/pressure/flow_bc.h>
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunused-parameter"
+#endif /* __clang__ */
 #include <opm/core/simulator/initState.hpp>
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif /* __clang__ */
 #include <opm/core/simulator/TwophaseState.hpp>
 #include <opm/core/utility/parameters/ParameterGroup.hpp>
 #include <opm/core/wells.h>
