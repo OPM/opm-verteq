@@ -42,7 +42,7 @@ int main (int argc, char *argv[]) try {
 	// initial state of the reservoir
 	const double gravity [] = { 0., 0., Opm::unit::gravity };
 	TwophaseState state;
-	initStateFromDeck (grid, fluid, parser, gravity [3], state);
+	initStateFromDeck (grid, fluid, parser, gravity [2], state);
 
 	// setup wells from input, using grid and rock properties read earlier
 	WellsManager wells (parser, grid, fluid.permeability());
