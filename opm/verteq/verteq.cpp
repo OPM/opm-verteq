@@ -18,7 +18,7 @@
 #include <opm/core/simulator/TwophaseState.hpp>
 #include <opm/core/utility/parameters/ParameterGroup.hpp>
 #include <opm/core/wells.h>
-#include <memory>           // auto_ptr
+#include <memory>           // unique_ptr
 
 using namespace Opm;
 using namespace Opm::parameter;
@@ -56,8 +56,8 @@ struct VertEqImpl : public VertEq {
 	                        TwophaseState &fineScale);
 	virtual void notify (const TwophaseState& coarseScale);
 
-	auto_ptr <TopSurf> ts;
-	auto_ptr <VertEqProps> pr;
+	unique_ptr <TopSurf> ts;
+	unique_ptr <VertEqProps> pr;
 	/**
 	 * Translate all the indices in the well list from a full, three-
 	 * dimensional grid into the upscaled top surface.
@@ -92,7 +92,7 @@ VertEq::create (const string& title,
 	static_cast <void> (args);
 
 	// we don't provide any parameters to do tuning yet
-	auto_ptr <VertEqImpl> impl (new VertEqImpl ());
+	unique_ptr <VertEqImpl> impl (new VertEqImpl ());
 	impl->init (fullGrid, fullProps, wells, fullSrc, fullBcs, fullGravity);
 	return impl.release();
 }
@@ -108,8 +108,8 @@ VertEqImpl::init(const UnstructuredGrid& fullGrid,
 	grav_vec = fullGravity;
 
 	// generate a two-dimensional upscaling as soon as we get the grid
-	ts = auto_ptr <TopSurf> (TopSurf::create (fullGrid));
-	pr = auto_ptr <VertEqProps> (VertEqProps::create (fullProps, *ts, grav_vec));
+	ts = unique_ptr <TopSurf> (TopSurf::create (fullGrid));
+	pr = unique_ptr <VertEqProps> (VertEqProps::create (fullProps, *ts, grav_vec));
 	// create a separate, but identical, list of wells we can work on
 	w = clone_wells(wells);
 	translate_wells ();

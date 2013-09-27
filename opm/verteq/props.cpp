@@ -6,7 +6,7 @@
 #include <opm/core/props/BlackoilPhases.hpp>
 #include <algorithm> // fill
 #include <cmath> // sqrt
-#include <memory> // auto_ptr
+#include <memory> // unique_ptr
 #include <vector>
 using namespace Opm;
 using namespace std;
@@ -828,9 +828,9 @@ VertEqProps::create (const IncompPropertiesInterface& fineProps,
                      const TopSurf& topSurf,
                      const double* grav_vec) {
 	// construct real object which contains all the implementation details
-	auto_ptr <VertEqProps> props (new VertEqPropsImpl (fineProps,
-	                                                   topSurf,
-	                                                   grav_vec));
+	unique_ptr <VertEqProps> props (new VertEqPropsImpl (fineProps,
+	                                                     topSurf,
+	                                                     grav_vec));
 
 	// client owns pointer to constructed fluid object from this point
 	return props.release ();
