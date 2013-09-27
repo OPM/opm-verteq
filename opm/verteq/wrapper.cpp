@@ -12,8 +12,8 @@ using namespace std;
 
 namespace Opm {
 
-template <typename Simulator>
-VertEqWrapper <Simulator>::VertEqWrapper (
+VertEqWrapperBase::VertEqWrapperBase (
+		unique_ptr <Simulator> underlaying,
 		const parameter::ParameterGroup& param,
 		const UnstructuredGrid& grid,
 		const IncompPropertiesInterface& props,
@@ -23,12 +23,13 @@ VertEqWrapper <Simulator>::VertEqWrapper (
 		const FlowBoundaryConditions* bcs,
 		LinearSolverInterface& linsolver,
 		const double* gravity)
+	// use this simulator
+	: sim (std::move (underlaying))
 
 	// initialize pointer to null, so it is deleted properly
 	// if the sim. ctor throws
-	: ve (0)
+	, ve (0)
 	, wells_mgr (0)
-	, sim (0)
 	, timestep_callbacks (new EventSource ())
 	, fineState (0)
 	, coarseState (0)
@@ -55,41 +56,37 @@ VertEqWrapper <Simulator>::VertEqWrapper (
 	// simulator (it cannot be a local here)
 	wells_mgr = new WellsManager (const_cast <Wells*> (ve->wells ()));
 
-	// pass arguments to the underlaying simulator
-	sim = new Simulator (param,
-	                     ve->grid (),
-	                     ve->props (),
-	                     rock_comp_props,
-	                     *wells_mgr,
-	                     ve->src (),
-	                     ve->bcs (),
-	                     linsolver,
-	                     ve->gravity ());
+    // pass arguments to the underlaying simulator; this is where
+    // the smart pointer wrapper will actually create the underlaying
+    // simulator instance
+    sim->init (param,
+               ve->grid (),
+               ve->props (),
+               rock_comp_props,
+               *wells_mgr,
+               ve->src (),
+               ve->bcs (),
+               linsolver,
+               ve->gravity ());
 }
 
-template <typename Simulator> Event&
-VertEqWrapper <Simulator>::timestep_completed () {
+Event&
+VertEqWrapperBase::timestep_completed () {
 	return *timestep_callbacks;
 }
 
-template <typename Simulator> void
-VertEqWrapper <Simulator>::resetSyncFlag () {
+void
+VertEqWrapperBase::resetSyncFlag () {
 	this->syncDone = false;
 }
 
-template <typename Simulator>
-VertEqWrapper <Simulator>::~VertEqWrapper () {
-	delete sim;
+VertEqWrapperBase::~VertEqWrapperBase () {
 	delete wells_mgr;
 	delete ve;
 }
 
-// need to template instantiate this method in order to use the
-// template method within it (connect_timestep); this is not a
-// disaster; different simulators will probably need different
-// specializations
-template <> SimulatorReport
-VertEqWrapper <SimulatorIncompTwophase>::run(
+SimulatorReport
+VertEqWrapperBase::run(
 		SimulatorTimer& timer,
 		TwophaseState& state,
 		WellState& well_state) {
@@ -118,8 +115,7 @@ VertEqWrapper <SimulatorIncompTwophase>::run(
 	// the sync flag so that the next timestep it will have to be
 	// done again (this depends on the ordering of the callbacks)
 	sim->timestep_completed ()
-	    .add <VertEqWrapper <SimulatorIncompTwophase>,
-	    &VertEqWrapper <SimulatorIncompTwophase>::resetSyncFlag> (*this);
+	    .add <VertEqWrapperBase, &VertEqWrapperBase::resetSyncFlag> (*this);
 
 	// we "reuse" the well state for the three-dimensional grid;
 	// it is a value object which is created once based on the
@@ -140,8 +136,8 @@ VertEqWrapper <SimulatorIncompTwophase>::run(
 	return report;
 }
 
-template <typename Simulator> void
-VertEqWrapper <Simulator>::sync () {
+void
+VertEqWrapperBase::sync () {
 	// if there is no "current" state, then we have been called from
 	// outside of the callback
 	if (!fineState) {
@@ -156,11 +152,5 @@ VertEqWrapper <Simulator>::sync () {
 		syncDone = true;
 	}
 }
-
-// supported wrappings; we need to list here all the possible
-// instantiations that should be done and put in the library
-// (and no other will be possible because they are missing the
-// code which is provided in this compilation unit).
-template struct VertEqWrapper <SimulatorIncompTwophase>;
 
 } /* namespace Opm */
