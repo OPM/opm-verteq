@@ -81,8 +81,8 @@ WELSPECS
 /
 
 COMPDAT
-	inj 	0	0	1	1	OPEN	1	0	0.2		/
-	prod	0	0	2	2	OPEN	1	0	0.2		/
+	inj 	1	1	1	1	OPEN	1	0	0.2		/
+	prod	3	1	2	2	OPEN	1	0	0.2		/
 /
 
 -- inject CO2 with a constant rate of 5000 cubic meters per day
