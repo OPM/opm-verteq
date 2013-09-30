@@ -90,9 +90,10 @@ WCONINJE
 	inj		OIL 	OPEN	RESV	-1		5000	/
 /
 
--- pump out 1 cubic meter per day from the reservoir
+-- brine with density 990 kg/m^3 in a 1000m column gives hydrostatic
+-- pressure of approx. 97 bar; BHP should be at least this to produce
 WCONPROD
-	prod	OPEN	RESV	-1		-1		-1		-1		5000	/
+	prod	OPEN	BHP 	-1		-1		-1		-1		-1		97	/
 /
 
 -- report monthly for a year
