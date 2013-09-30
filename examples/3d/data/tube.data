@@ -7,9 +7,10 @@ DIMENS
 	3	1	2
 /
 
--- brine as the wetting phase, supercritical co2 as the non-wetting phase
-OIL
+-- OPM currently has a bias against injecting anything else than first phase
+-- supercrit. co2 as the first phase (WATER), brine as second phase (OIL)
 WATER
+OIL
 
 -- only use SI units
 METRIC
@@ -33,37 +34,41 @@ PROPS
 
 -- brine is 990 kg/m3, 0.35cP, co2 is 650 kg/m3, 0.06cP, at 100 bars (40C)
 DENSITY
---	co2   brine
-	650   990
-/
-
-PVTW
---	pres	vol.f	comp	visc
-	100		1		0		0.35
+--	brine	co2
+	990	 	650
 /
 
 PVCDO
+--	pres	vol.f	comp	visc
+	100 	1	 	0		0.35
+/
+
+PVTW
 	100		1		0		0.06
 /
 
 -- From S. Benson, Energy Resources Eng. Dept., Stanford Uni.
 SWOF
---	Sw		krw		kro		Pcow
-	0.2 	0.00	1.00	0.5000
-	0.3 	0.01	0.90	0.1000
-	0.4 	0.03	0.60	0.0700
-	0.5 	0.05	0.25	0.0575
-	0.6 	0.10	0.15	0.0550
-	0.7 	0.20	0.10	0.0475
-	0.8 	0.30	0.03	0.0450
-	0.9		0.50	0.01	0.0375
-	0.95	1.00	0.00	0.0000
+--	S_co2	kr_co2	kr_br	Pcow
+	0.05	0.00	1.00	0.0000
+	0.10	0.01	0.50	0.0375
+	0.20 	0.03	0.30	0.0450
+	0.30 	0.10	0.20	0.0475
+	0.40 	0.15	0.10	0.0550
+	0.50 	0.25	0.05	0.0575
+	0.60 	0.60	0.03	0.0700
+	0.70 	0.90	0.01	0.1000
+	0.80 	1.00	0.00	0.5000
 /
 
 SOLUTION
 
 -- every block in the grid starts out water-filled, at 100 bars
 SWAT
+	6*0.0
+/
+
+SOIL
 	6*1.0
 /
 
@@ -76,8 +81,8 @@ SCHEDULE
 -- injector is at (1,1,1..1), producer is at (3,1,2..2), at 1000m depth
 -- both wells have a radius of 0.2m
 WELSPECS
-	inj 	grp		1	1	1000	OIL  	/
-	prod	grp		3	1	1000	WATER	/
+	inj 	grp		1	1	1000	WATER  	/
+	prod	grp		3	1	1000	OIL  	/
 /
 
 COMPDAT
@@ -87,7 +92,7 @@ COMPDAT
 
 -- inject CO2 with a constant rate of 5000 cubic meters per day
 WCONINJE
-	inj		OIL 	OPEN	RESV	-1		5000	/
+	inj		WATER 	OPEN	RESV	-1		5000	/
 /
 
 -- brine with density 990 kg/m^3 in a 1000m column gives hydrostatic
