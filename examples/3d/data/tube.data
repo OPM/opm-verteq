@@ -82,14 +82,14 @@ COMPDAT
 	prod	0	0	2	2	OPEN	1	0	0.2		/
 /
 
--- inject CO2 with a constant rate of 1 cubic meters per day
+-- inject CO2 with a constant rate of 5000 cubic meters per day
 WCONINJE
-	inj		OIL 	OPEN	RESV	-1		1	/
+	inj		OIL 	OPEN	RESV	-1		5000	/
 /
 
 -- pump out 1 cubic meter per day from the reservoir
 WCONPROD
-	prod	OPEN	RESV	-1		-1		-1		-1		1	/
+	prod	OPEN	RESV	-1		-1		-1		-1		5000	/
 /
 
 -- report monthly for a year
