@@ -15,7 +15,7 @@ WATER
 METRIC
 
 START
-	01 DEC 2012
+	01 OCT 2013
 /
 
 -- two wells, one injector and one producer
@@ -96,7 +96,7 @@ WCONPROD
 	prod	OPEN	BHP 	-1		-1		-1		-1		-1		97	/
 /
 
--- report monthly for a year
+-- report daily
 TSTEP
-	31	28	31	30	31	30	31	31	30	31	30	31
+	1	1	1	1
 /
