@@ -499,9 +499,7 @@ struct VertEqPropsImpl : public VertEqProps {
 
 			// the slopes of the pressure curves are different. the distance
 			// between them (at the top for instance) is dependent on where
-			// they intersect (i.e. at the interface between the phases). in
-			// addition, the brine pressure is measured at the bottom, so we
-			// must also add the total height to get down there
+			// they intersect (i.e. at the interface between the phases)
 			const double hyd_diff = -gravity * (intf_hgt * dens_diff);
 
 			// find the fine-scale element that holds the interface; we already
