@@ -499,7 +499,10 @@ struct VertEqPropsImpl : public VertEqProps {
 
 			// the slopes of the pressure curves are different. the distance
 			// between them (at the top for instance) is dependent on where
-			// they intersect (i.e. at the interface between the phases)
+			// they intersect (i.e. at the interface between the phases). if
+			// the coordinate system is tilted, we assume that the 'gravity'
+			// scalar here is the inner product between the vertical axis and
+			// the real gravity vector.
 			const double hyd_diff = -gravity * (intf_hgt * dens_diff);
 
 			// find the fine-scale element that holds the interface; we already
