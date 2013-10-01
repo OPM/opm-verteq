@@ -23,6 +23,9 @@ struct VertEqPropsImpl : public VertEqProps {
 	/// Get the grid information from here
 	const TopSurf& ts;
 
+	/// Helper object to do averaging
+	const VertEqUpscaler up;
+
 	// constants to avoid a bunch of "magic" values in the code
 	static const int TWO_DIMS   = 2;
 	static const int THREE_DIMS = 3;
@@ -45,9 +48,6 @@ struct VertEqPropsImpl : public VertEqProps {
 	static const int GAS = BlackoilPhases::Liquid;
 	static const int WAT = BlackoilPhases::Aqua;
 	static const int NUM_PHASES = 2;
-
-	/// Helper object to do averaging
-	const VertEqUpscaler up;
 
 	/// Upscaled porosity; this is \Phi in the papers
 	vector <double> upscaled_poro;
