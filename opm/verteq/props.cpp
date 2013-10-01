@@ -44,9 +44,10 @@ struct VertEqPropsImpl : public VertEqProps {
 	static const int KYX_OFS_2D = 1 * TWO_DIMS + 0; // (y, x), x = 0, y = 1
 	static const int KYY_OFS_2D = 1 * TWO_DIMS + 1; // (y, y), y = 1
 
-	// we assume this ordering of the phases in arrays
-	static const int GAS = BlackoilPhases::Liquid;
-	static const int WAT = BlackoilPhases::Aqua;
+	// we assume this ordering of the phases in arrays. these used to be
+	// static, but they are now initialized from the phase properties
+	const int GAS; // = BlackoilPhases::Liquid;
+	const int WAT; // = BlackoilPhases::Aqua;
 	static const int NUM_PHASES = 2;
 
 	/// Upscaled porosity; this is \Phi in the papers
@@ -185,6 +186,14 @@ struct VertEqPropsImpl : public VertEqProps {
 		: fp (fineProps)
 		, ts (topSurf)
 		, up (ts)
+
+		// assign which phase is which (e.g. CO2 is first, brine is second)
+		// a basic assumption of the vertical equilibrium is that the CO2 is
+		// the lightest phase and thus rise to the top of the reservoir
+		, GAS (fp.density()[0] < fp.density()[1] ? 0 : 1)
+		, WAT (1 - GAS)
+
+		// allocate memory for intermediate integrals
 		, res_gas_vol (ts.number_of_cells, ts.col_cellpos)
 		, mob_mix_vol (ts.number_of_cells, ts.col_cellpos)
 		, res_wat_vol (ts.number_of_cells, ts.col_cellpos)
