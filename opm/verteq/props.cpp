@@ -68,9 +68,9 @@ struct VertEqPropsImpl : public VertEqProps {
 	RunLenData <double> res_wat_vol; // \phi (1 - S_{w,r})
 
 	/// Volume-of-gas-phase-fraction-weighted depths-fractions
-	RunLenData <double> res_gas_dpt; // int_{h}^{\zeta_T} \phi S_{n,r} dz
-	RunLenData <double> mob_mix_dpt; // int_{h}^{\zeta_T} \phi (1 - S_{w,r} - S_{n,r} dz
-	RunLenData <double> res_wat_dpt; // int_{h}^{\zeta_T} \phi (1 - S_{w,r}) dz
+	RunLenData <double> res_gas_dpt; // 1/H * int_{h}^{\zeta_T} \phi S_{n,r} dz
+	RunLenData <double> mob_mix_dpt; // 1/H * int_{h}^{\zeta_T} \phi (1 - S_{w,r} - S_{n,r} dz
+	RunLenData <double> res_wat_dpt; // 1/H * int_{h}^{\zeta_T} \phi (1 - S_{w,r}) dz
 
 	// we need to keep track of where the plume has been and deposited
 	// residual CO2. however, finding the interface is non-trivial and
@@ -316,7 +316,8 @@ struct VertEqPropsImpl : public VertEqProps {
 			}
 
 			// weight the relative depth factor (how close are we towards a
-			// completely filled column) with the volume portions
+			// completely filled column) with the volume portions. this call
+			// to up.wgt_dpt is the same as 1/H int_{h}^{\Zeta_T} ... dz
 			up.wgt_dpt (col, &res_gas_col[0], res_gas_dpt);
 			up.wgt_dpt (col, &mob_mix_col[0], mob_mix_dpt);
 			up.wgt_dpt (col, &res_wat_col[0], res_wat_dpt);
