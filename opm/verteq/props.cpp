@@ -49,6 +49,7 @@ struct VertEqPropsImpl : public VertEqProps {
 	const int GAS; // = BlackoilPhases::Liquid;
 	const int WAT; // = BlackoilPhases::Aqua;
 	static const int NUM_PHASES = 2;
+	static const int NUM_PHASES_SQ = NUM_PHASES * NUM_PHASES;
 
 	/// Since Pc_ow = -Pc,wo and dS_o = -dS_w, we can query the capillary
 	/// pressure for only the first phase, and then adjust the sign to get
@@ -464,10 +465,10 @@ struct VertEqPropsImpl : public VertEqProps {
 				// assign to output: since Sw = 1 - Sg, then dkr_g/ds_w = -dkr_g/ds_g
 				// viewed as a 2x2 record; the minor index designates the denominator
 				// (saturation) and the major index designates the numerator (rel.perm.)
-				dkrds[i * (NUM_PHASES * NUM_PHASES) + NUM_PHASES * GAS + GAS] =  dKrg_dSg;
-				dkrds[i * (NUM_PHASES * NUM_PHASES) + NUM_PHASES * GAS + WAT] = -dKrg_dSg;
-				dkrds[i * (NUM_PHASES * NUM_PHASES) + NUM_PHASES * WAT + GAS] =  dKrw_dSg;
-				dkrds[i * (NUM_PHASES * NUM_PHASES) + NUM_PHASES * WAT + WAT] = -dKrw_dSg;
+				dkrds[i * NUM_PHASES_SQ + NUM_PHASES * GAS + GAS] =  dKrg_dSg;
+				dkrds[i * NUM_PHASES_SQ + NUM_PHASES * GAS + WAT] = -dKrg_dSg;
+				dkrds[i * NUM_PHASES_SQ + NUM_PHASES * WAT + GAS] =  dKrw_dSg;
+				dkrds[i * NUM_PHASES_SQ + NUM_PHASES * WAT + WAT] = -dKrw_dSg;
 			}
 		}
 	}
@@ -524,7 +525,7 @@ struct VertEqPropsImpl : public VertEqProps {
 			// local variables. BTW; why the number of outputs?
 			double fine_sat[NUM_PHASES];
 			double fine_pc[NUM_PHASES];               // entry pressures
-			double fine_dpc[NUM_PHASES * NUM_PHASES]; // derivatives
+			double fine_dpc[NUM_PHASES_SQ];           // derivatives
 			fine_sat[GAS] = intf.fraction ();
 			fine_sat[WAT] = 1 - fine_sat[GAS];
 			fp.capPress (1, fine_sat, &glob_id, fine_pc, fine_dpc);
