@@ -146,12 +146,14 @@ struct VertEqPropsImpl : public VertEqProps {
 		// the first term is \Phi * S_g representing the volume of CO2, the
 		// second is the integral int_{\zeta_R}^{\zeta_T} \phi s_{g,r} dz,
 		// representing the volume of residual CO2; the remainder becomes
-		// the mobile CO2 volume
-		const double gas_vol = upscaled_poro[col] * gas_sat // \Phi * S_g
-		                     + up.eval (col, res_gas_dpt, max_gas_elev[col]);
+		// the mobile CO2 volume. the entire equation is multiplied by 1/H.
+		const Elevation& res_lvl = max_gas_elev[col];         // Zeta_R
+		const double res_vol = up.eval (col, res_gas_dpt, res_lvl);
+		const double gas_vol = upscaled_poro[col] * gas_sat; // \Phi * S_g
+		const double mob_vol = gas_vol - res_vol;
 
 		// lookup to find the height that gives this mobile volume
-		const Elevation zeta_M = up.find (col, mob_mix_dpt[col], gas_vol);
+		const Elevation zeta_M = up.find (col, mob_mix_dpt[col], mob_vol);
 		return zeta_M;
 	}
 
