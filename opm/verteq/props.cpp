@@ -77,7 +77,6 @@ struct VertEqPropsImpl : public VertEqProps {
 	// should only be done if we actually see a new maximum of the
 	// saturation. this array contains the trigger point for recalc.
 	vector <double> max_gas_sat;      // S_{g,max}
-	vector <Elevation> max_gas_elev;  // \zeta_R
 
 	virtual void upd_res_sat (const double* snap) {
 		// update saturation for each column
@@ -87,9 +86,6 @@ struct VertEqPropsImpl : public VertEqProps {
 
 			// has it increased? is there more of the plume in this column?
 			if (cur_sat > max_gas_sat[col]) {
-				// recalculate discretized elevation
-				max_gas_elev[col] = res_elev (col, cur_sat);
-
 				// update stored saturation so we test correctly next time
 				max_gas_sat[col] = cur_sat;
 			}
@@ -142,8 +138,7 @@ struct VertEqPropsImpl : public VertEqProps {
 		// get the residual interface either by historic values, or if the
 		// rel.perm. function is called with a hypothetical new saturation
 		// which may be greater.
-		const Elevation res_lvl =
-		    res_elev (col, std::max (gas_sat, max_gas_sat[col])); // Zeta_R
+		const Elevation res_lvl = res_elev (col, gas_sat);  // Zeta_R
 
 		// the first term is \Phi * S_g representing the volume of CO2, the
 		// second is the integral int_{\zeta_R}^{\zeta_T} \phi s_{g,r} dz,
@@ -214,9 +209,6 @@ struct VertEqPropsImpl : public VertEqProps {
 		// assume that there is no initial plume; first notification will
 		// trigger an update of all columns where there actually is CO2
 		, max_gas_sat (ts.number_of_cells, 0.)
-
-		// this is the elevation that corresponds to no CO2 sat.
-		, max_gas_elev (ts.number_of_cells, Elevation (0, 0.))
 
 		, prm_gas (ts.number_of_cells, ts.col_cellpos)
 		, prm_gas_int (ts.number_of_cells, ts.col_cellpos)
@@ -438,8 +430,7 @@ struct VertEqPropsImpl : public VertEqProps {
 
 			// registered level of maximum CO2 sat. (where there is at least
 			// residual CO2
-			const Elevation res_lvl =
-			    res_elev (col, std::max (max_gas_sat[col], Sg)); // zeta_R
+			const Elevation res_lvl = res_elev (col, Sg); // zeta_R
 
 			// rel.perm. for brine at this location; notice that all of
 			// our expressions uses the CO2 saturation as parameter
@@ -717,14 +708,8 @@ struct VertEqPropsImpl : public VertEqProps {
 			// current height of mobile CO2
 			const double gas_hgt = coarseSaturation[col * NUM_PHASES + GAS];
 
-			// make sure residual area of CO2 is up to speed; this ensures
-			// that we're looking at current data in the max_gas_elev member
-			if (gas_hgt > max_gas_sat[col]) {
-				throw OPM_EXC ("Call upd_res_sat before downscale_saturation");
-			}
-
 			// height of the interface of residual and mobile CO2, resp.
-			const Elevation res_gas = max_gas_elev[col];         // zeta_R
+			const Elevation res_gas = res_elev (col, gas_hgt);   // zeta_R
 			const Elevation mob_gas = intf_elev (col, gas_hgt);  // zeta_M
 
 			// query the fine properties for the residual saturations; notice
