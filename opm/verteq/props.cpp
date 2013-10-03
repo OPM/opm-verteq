@@ -57,7 +57,7 @@ struct VertEqPropsImpl : public VertEqProps {
 	const double phase_sign;
 
 	/// Upscaled porosity; this is \Phi in the papers
-	vector <double> upscaled_poro;
+	vector <double> upscaled_poro;   // 1/H * int_{\Zeta_B}^{\Zeta_T} \phi dz
 
 	/// Upscaled permeability; this is K in the papers
 	vector <double> upscaled_absperm;
