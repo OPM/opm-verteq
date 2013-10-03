@@ -106,7 +106,7 @@ struct VertEqPropsImpl : public VertEqProps {
 	 *
 	 * using precalculated values for the integral.
 	 */
-	Elevation res_elev(const int col, const double max_sat) {
+	Elevation res_elev(const int col, const double max_sat) const {
 		// right-hand side of the equation (apart from H, which is divided
 		// in the averaging operator stored)
 		const double max_vol = upscaled_poro[col] * max_sat;
