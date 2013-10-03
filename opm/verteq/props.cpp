@@ -134,16 +134,16 @@ struct VertEqPropsImpl : public VertEqProps {
 	 * up than the current interface!)
 	 */
 	Elevation intf_elev (const int col, const double gas_sat) const {
-		// check to make sure that the simulator updates the correct values
-		// this duplicates the efforts of the callback, but this is only called
-		// whenever we need the rel.perm.
-		//check_res_sat (col, gas_sat);
+		// get the residual interface either by historic values, or if the
+		// rel.perm. function is called with a hypothetical new saturation
+		// which may be greater.
+		const Elevation res_lvl =
+		    res_elev (col, std::max (gas_sat, max_gas_sat[col])); // Zeta_R
 
 		// the first term is \Phi * S_g representing the volume of CO2, the
 		// second is the integral int_{\zeta_R}^{\zeta_T} \phi s_{g,r} dz,
 		// representing the volume of residual CO2; the remainder becomes
 		// the mobile CO2 volume. the entire equation is multiplied by 1/H.
-		const Elevation& res_lvl = max_gas_elev[col];         // Zeta_R
 		const double res_vol = up.eval (col, res_gas_dpt, res_lvl);
 		const double gas_vol = upscaled_poro[col] * gas_sat; // \Phi * S_g
 		const double mob_vol = gas_vol - res_vol;
@@ -433,7 +433,8 @@ struct VertEqPropsImpl : public VertEqProps {
 
 			// registered level of maximum CO2 sat. (where there is at least
 			// residual CO2
-			const Elevation res_lvl = max_gas_elev[col]; // zeta_R
+			const Elevation res_lvl =
+			    res_elev (col, std::max (max_gas_sat[col], Sg)); // zeta_R
 
 			// rel.perm. for brine at this location; notice that all of
 			// our expressions uses the CO2 saturation as parameter
