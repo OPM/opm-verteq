@@ -57,7 +57,7 @@ struct VertEqPropsImpl : public VertEqProps {
 	const double phase_sign;
 
 	/// Upscaled porosity; this is \Phi in the papers
-	vector <double> upscaled_poro;
+	vector <double> upscaled_poro;   // 1/H * int_{\Zeta_B}^{\Zeta_T} \phi dz
 
 	/// Upscaled permeability; this is K in the papers
 	vector <double> upscaled_absperm;
@@ -68,16 +68,15 @@ struct VertEqPropsImpl : public VertEqProps {
 	RunLenData <double> res_wat_vol; // \phi (1 - S_{w,r})
 
 	/// Volume-of-gas-phase-fraction-weighted depths-fractions
-	RunLenData <double> res_gas_dpt; // int_{h}^{\zeta_T} \phi S_{n,r} dz
-	RunLenData <double> mob_mix_dpt; // int_{h}^{\zeta_T} \phi (1 - S_{w,r} - S_{n,r} dz
-	RunLenData <double> res_wat_dpt; // int_{h}^{\zeta_T} \phi (1 - S_{w,r}) dz
+	RunLenData <double> res_gas_dpt; // 1/H * int_{h}^{\zeta_T} \phi S_{n,r} dz
+	RunLenData <double> mob_mix_dpt; // 1/H * int_{h}^{\zeta_T} \phi (1 - S_{w,r} - S_{n,r} dz
+	RunLenData <double> res_wat_dpt; // 1/H * int_{h}^{\zeta_T} \phi (1 - S_{w,r}) dz
 
 	// we need to keep track of where the plume has been and deposited
 	// residual CO2. however, finding the interface is non-trivial and
 	// should only be done if we actually see a new maximum of the
 	// saturation. this array contains the trigger point for recalc.
 	vector <double> max_gas_sat;      // S_{g,max}
-	vector <Elevation> max_gas_elev;  // \zeta_R
 
 	virtual void upd_res_sat (const double* snap) {
 		// update saturation for each column
@@ -86,17 +85,10 @@ struct VertEqPropsImpl : public VertEqProps {
 			const double cur_sat = snap[col * NUM_PHASES + GAS];
 
 			// has it increased? is there more of the plume in this column?
-			check_res_sat (col, cur_sat);
-		}
-	}
-
-	void check_res_sat (int col, double cur_sat) {
-		if (cur_sat > max_gas_sat[col]) {
-			// recalculate discretized elevation
-			max_gas_elev[col] = res_elev (col, cur_sat);
-
-			// update stored saturation so we test correctly next time
-			max_gas_sat[col] = cur_sat;
+			if (cur_sat > max_gas_sat[col]) {
+				// update stored saturation so we test correctly next time
+				max_gas_sat[col] = cur_sat;
+			}
 		}
 	}
 
@@ -110,7 +102,12 @@ struct VertEqPropsImpl : public VertEqProps {
 	 *
 	 * using precalculated values for the integral.
 	 */
-	Elevation res_elev(const int col, const double max_sat) {
+	Elevation res_elev(const int col, const double cur_sat) const {
+		// take the highest of the current saturation and the historical
+		// highest seen. note that this does NOT update the maximum, allowing
+		// this routine to be used for hypothetical saturations
+		const double max_sat = std::max (cur_sat, max_gas_sat[col]);
+
 		// right-hand side of the equation (apart from H, which is divided
 		// in the averaging operator stored)
 		const double max_vol = upscaled_poro[col] * max_sat;
@@ -138,20 +135,21 @@ struct VertEqPropsImpl : public VertEqProps {
 	 * up than the current interface!)
 	 */
 	Elevation intf_elev (const int col, const double gas_sat) const {
-		// check to make sure that the simulator updates the correct values
-		// this duplicates the efforts of the callback, but this is only called
-		// whenever we need the rel.perm.
-		//check_res_sat (col, gas_sat);
+		// get the residual interface either by historic values, or if the
+		// rel.perm. function is called with a hypothetical new saturation
+		// which may be greater.
+		const Elevation res_lvl = res_elev (col, gas_sat);  // Zeta_R
 
 		// the first term is \Phi * S_g representing the volume of CO2, the
 		// second is the integral int_{\zeta_R}^{\zeta_T} \phi s_{g,r} dz,
 		// representing the volume of residual CO2; the remainder becomes
-		// the mobile CO2 volume
-		const double gas_vol = upscaled_poro[col] * gas_sat // \Phi * S_g
-		                     + up.eval (col, res_gas_dpt, max_gas_elev[col]);
+		// the mobile CO2 volume. the entire equation is multiplied by 1/H.
+		const double res_vol = up.eval (col, res_gas_dpt, res_lvl);
+		const double gas_vol = upscaled_poro[col] * gas_sat; // \Phi * S_g
+		const double mob_vol = gas_vol - res_vol;
 
 		// lookup to find the height that gives this mobile volume
-		const Elevation zeta_M = up.find (col, mob_mix_dpt[col], gas_vol);
+		const Elevation zeta_M = up.find (col, mob_mix_dpt[col], mob_vol);
 		return zeta_M;
 	}
 
@@ -211,9 +209,6 @@ struct VertEqPropsImpl : public VertEqProps {
 		// assume that there is no initial plume; first notification will
 		// trigger an update of all columns where there actually is CO2
 		, max_gas_sat (ts.number_of_cells, 0.)
-
-		// this is the elevation that corresponds to no CO2 sat.
-		, max_gas_elev (ts.number_of_cells, Elevation (0, 0.))
 
 		, prm_gas (ts.number_of_cells, ts.col_cellpos)
 		, prm_gas_int (ts.number_of_cells, ts.col_cellpos)
@@ -316,7 +311,8 @@ struct VertEqPropsImpl : public VertEqProps {
 			}
 
 			// weight the relative depth factor (how close are we towards a
-			// completely filled column) with the volume portions
+			// completely filled column) with the volume portions. this call
+			// to up.wgt_dpt is the same as 1/H int_{h}^{\Zeta_T} ... dz
 			up.wgt_dpt (col, &res_gas_col[0], res_gas_dpt);
 			up.wgt_dpt (col, &mob_mix_col[0], mob_mix_dpt);
 			up.wgt_dpt (col, &res_wat_col[0], res_wat_dpt);
@@ -434,7 +430,7 @@ struct VertEqPropsImpl : public VertEqProps {
 
 			// registered level of maximum CO2 sat. (where there is at least
 			// residual CO2
-			const Elevation res_lvl = max_gas_elev[col]; // zeta_R
+			const Elevation res_lvl = res_elev (col, Sg); // zeta_R
 
 			// rel.perm. for brine at this location; notice that all of
 			// our expressions uses the CO2 saturation as parameter
@@ -712,12 +708,8 @@ struct VertEqPropsImpl : public VertEqProps {
 			// current height of mobile CO2
 			const double gas_hgt = coarseSaturation[col * NUM_PHASES + GAS];
 
-			// make sure residual area of CO2 is up to speed; this ensures
-			// that we're looking at current data in the max_gas_elev member
-			check_res_sat (col, gas_hgt);
-
 			// height of the interface of residual and mobile CO2, resp.
-			const Elevation res_gas = max_gas_elev[col];         // zeta_R
+			const Elevation res_gas = res_elev (col, gas_hgt);   // zeta_R
 			const Elevation mob_gas = intf_elev (col, gas_hgt);  // zeta_M
 
 			// query the fine properties for the residual saturations; notice
