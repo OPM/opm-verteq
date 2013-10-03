@@ -12,7 +12,7 @@
 #include <cstdlib> // div
 #include <iosfwd> // ostream
 #include <map>
-#include <memory> // auto_ptr
+#include <memory> // unique_ptr
 #include <numeric> // accumulate, iota
 #include <vector>
 #include <utility> // pair
@@ -756,14 +756,9 @@ private:
 	}
 };
 
-// I *know* that we are not supposed to use auto_ptr anymore, but
-// it works in both C++98 and C++11 and is the only common way to
-// transfer the object out of the smart pointer afterwards
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 TopSurf*
 TopSurf::create (const UnstructuredGrid& fine_grid) {
-	auto_ptr <TopSurf> ts (new TopSurf);
+	unique_ptr <TopSurf> ts (new TopSurf);
 
 	// outsource the entire construction to a builder object
 	TopSurfBuilder (fine_grid, *(ts.get ()));
@@ -772,7 +767,6 @@ TopSurf::create (const UnstructuredGrid& fine_grid) {
 	// client owns pointer to constructed grid from this point
 	return ts.release ();
 }
-#pragma GCC diagnostic pop
 
 TopSurf::TopSurf ()
 	: col_cells (0)

@@ -7,7 +7,14 @@
 #include <opm/core/simulator/SimulatorReport.hpp>
 #include <opm/core/simulator/TwophaseState.hpp>
 #include <opm/core/utility/Event.hpp>
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunused-parameter"
+#endif /* __clang__ */
 #include <opm/core/wells/WellsManager.hpp>
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif /* __clang__ */
 using namespace std;
 
 namespace Opm {
