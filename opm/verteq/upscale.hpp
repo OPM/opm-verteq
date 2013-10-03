@@ -133,6 +133,10 @@ struct VertEqUpscaler {
 	/**
 	 * Depth-average of a property discretized for each block.
 	 *
+	 * This is the same as the last item written in the column wih wgt_dpt,
+	 * except this method returns the single result instead of all values
+	 * down the column.
+	 *
 	 * @param col Index of the column for which values should be averaged.
 	 *
 	 * @param val Value for each block in the column.
