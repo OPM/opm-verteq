@@ -23,6 +23,9 @@ struct VertEqPropsImpl : public VertEqProps {
 	/// Get the grid information from here
 	const TopSurf& ts;
 
+	/// Helper object to do averaging
+	const VertEqUpscaler up;
+
 	// constants to avoid a bunch of "magic" values in the code
 	static const int TWO_DIMS   = 2;
 	static const int THREE_DIMS = 3;
@@ -41,13 +44,17 @@ struct VertEqPropsImpl : public VertEqProps {
 	static const int KYX_OFS_2D = 1 * TWO_DIMS + 0; // (y, x), x = 0, y = 1
 	static const int KYY_OFS_2D = 1 * TWO_DIMS + 1; // (y, y), y = 1
 
-	// we assume this ordering of the phases in arrays
-	static const int GAS = BlackoilPhases::Liquid;
-	static const int WAT = BlackoilPhases::Aqua;
+	// we assume this ordering of the phases in arrays. these used to be
+	// static, but they are now initialized from the phase properties
+	const int GAS; // = BlackoilPhases::Liquid;
+	const int WAT; // = BlackoilPhases::Aqua;
 	static const int NUM_PHASES = 2;
+	static const int NUM_PHASES_SQ = NUM_PHASES * NUM_PHASES;
 
-	/// Helper object to do averaging
-	const VertEqUpscaler up;
+	/// Since Pc_ow = -Pc,wo and dS_o = -dS_w, we can query the capillary
+	/// pressure for only the first phase, and then adjust the sign to get
+	/// the rest.
+	const double phase_sign;
 
 	/// Upscaled porosity; this is \Phi in the papers
 	vector <double> upscaled_poro;
@@ -185,6 +192,15 @@ struct VertEqPropsImpl : public VertEqProps {
 		: fp (fineProps)
 		, ts (topSurf)
 		, up (ts)
+
+		// assign which phase is which (e.g. CO2 is first, brine is second)
+		// a basic assumption of the vertical equilibrium is that the CO2 is
+		// the lightest phase and thus rise to the top of the reservoir
+		, GAS (fp.density()[0] < fp.density()[1] ? 0 : 1)
+		, WAT (1 - GAS)
+		, phase_sign (GAS < WAT ? +1. : -1.)
+
+		// allocate memory for intermediate integrals
 		, res_gas_vol (ts.number_of_cells, ts.col_cellpos)
 		, mob_mix_vol (ts.number_of_cells, ts.col_cellpos)
 		, res_wat_vol (ts.number_of_cells, ts.col_cellpos)
@@ -449,10 +465,10 @@ struct VertEqPropsImpl : public VertEqProps {
 				// assign to output: since Sw = 1 - Sg, then dkr_g/ds_w = -dkr_g/ds_g
 				// viewed as a 2x2 record; the minor index designates the denominator
 				// (saturation) and the major index designates the numerator (rel.perm.)
-				dkrds[i * (NUM_PHASES * NUM_PHASES) + NUM_PHASES * GAS + GAS] =  dKrg_dSg;
-				dkrds[i * (NUM_PHASES * NUM_PHASES) + NUM_PHASES * GAS + WAT] = -dKrg_dSg;
-				dkrds[i * (NUM_PHASES * NUM_PHASES) + NUM_PHASES * WAT + GAS] =  dKrw_dSg;
-				dkrds[i * (NUM_PHASES * NUM_PHASES) + NUM_PHASES * WAT + WAT] = -dKrw_dSg;
+				dkrds[i * NUM_PHASES_SQ + NUM_PHASES * GAS + GAS] =  dKrg_dSg;
+				dkrds[i * NUM_PHASES_SQ + NUM_PHASES * GAS + WAT] = -dKrg_dSg;
+				dkrds[i * NUM_PHASES_SQ + NUM_PHASES * WAT + GAS] =  dKrw_dSg;
+				dkrds[i * NUM_PHASES_SQ + NUM_PHASES * WAT + WAT] = -dKrw_dSg;
 			}
 		}
 	}
@@ -490,9 +506,10 @@ struct VertEqPropsImpl : public VertEqProps {
 
 			// the slopes of the pressure curves are different. the distance
 			// between them (at the top for instance) is dependent on where
-			// they intersect (i.e. at the interface between the phases). in
-			// addition, the brine pressure is measured at the bottom, so we
-			// must also add the total height to get down there
+			// they intersect (i.e. at the interface between the phases). if
+			// the coordinate system is tilted, we assume that the 'gravity'
+			// scalar here is the inner product between the vertical axis and
+			// the real gravity vector.
 			const double hyd_diff = -gravity * (intf_hgt * dens_diff);
 
 			// find the fine-scale element that holds the interface; we already
@@ -508,18 +525,21 @@ struct VertEqPropsImpl : public VertEqProps {
 			// local variables. BTW; why the number of outputs?
 			double fine_sat[NUM_PHASES];
 			double fine_pc[NUM_PHASES];               // entry pressures
-			double fine_dpc[NUM_PHASES * NUM_PHASES]; // derivatives
+			double fine_dpc[NUM_PHASES_SQ];           // derivatives
 			fine_sat[GAS] = intf.fraction ();
 			fine_sat[WAT] = 1 - fine_sat[GAS];
 			fp.capPress (1, fine_sat, &glob_id, fine_pc, fine_dpc);
 
 			// total capillary pressure. the fine scale entry pressure is
 			// a wedge between the slopes of the hydrostatic pressures.
-			const double cap_pres = fine_pc[GAS] + hyd_diff;
+			const double fine_pc_GAS = phase_sign * fine_pc[0];
+			const double cap_pres = fine_pc_GAS + hyd_diff;
 
-			// assign to output
-			pc[i * NUM_PHASES + GAS] =  cap_pres;
-			pc[i * NUM_PHASES + WAT] = -cap_pres;
+			// assign to output; only the first phase is set, the other should
+			// be set to zero (?), see method SimpleFluid2pWrappingProps::pc in
+			// opm/core/transport/implicit/SimpleFluid2pWrappingProps_impl.hpp
+			pc[i * NUM_PHASES + 0] = phase_sign * cap_pres;
+			pc[i * NUM_PHASES + 1] = 0.;
 
 			// interested in the derivatives of the capillary pressure as well?
 			if (dpcds) {
@@ -532,8 +552,11 @@ struct VertEqPropsImpl : public VertEqProps {
 				// change of hydrostatic pressure diff per change in interface height
 				const double hyd_dPc_dh = -gravity * dens_diff; // dPc/d\zeta_M
 
-				// change in entry pressure per *fine* saturation
-				const double dpe_dsg = fine_dpc[NUM_PHASES * GAS + GAS];
+				// change in entry pressure per *fine* saturation; notice that only one
+				// of the derivatives is set; see the code below for dpcds for the sign
+				const double dpe_dsg = GAS < WAT ?
+				      +fine_dpc[NUM_PHASES * GAS + GAS] :
+				      -fine_dpc[NUM_PHASES * WAT + WAT] ;
 
 				// change in fine saturation per interface height (in this block)
 				const double dsg_dh = 1 / ts_dz[col][intf.block()];
@@ -544,10 +567,12 @@ struct VertEqPropsImpl : public VertEqProps {
 				// assign to output: since Sw = 1 - Sg, then dpc_g/ds_w = -dkr_g/ds_g
 				// viewed as a 2x2 record; the minor index designates the denominator
 				// (saturation) and the major index designates the numerator (rel.perm.)
-				dpcds[i * (NUM_PHASES * NUM_PHASES) + NUM_PHASES * GAS + GAS] =  dPc_dSg;
-				dpcds[i * (NUM_PHASES * NUM_PHASES) + NUM_PHASES * GAS + WAT] = -dPc_dSg;
-				dpcds[i * (NUM_PHASES * NUM_PHASES) + NUM_PHASES * WAT + GAS] =  dPc_dSg;
-				dpcds[i * (NUM_PHASES * NUM_PHASES) + NUM_PHASES * WAT + WAT] = -dPc_dSg;
+				// here too (like for pc) only the first phase is set, the others should
+				// have the magic value zero hard-coded (?)
+				dpcds[i * NUM_PHASES_SQ + NUM_PHASES * 0 + 0] = phase_sign * dPc_dSg;
+				dpcds[i * NUM_PHASES_SQ + NUM_PHASES * 0 + 1] = 0.;
+				dpcds[i * NUM_PHASES_SQ + NUM_PHASES * 1 + 0] = 0.;
+				dpcds[i * NUM_PHASES_SQ + NUM_PHASES * 1 + 1] = 0.;
 			}
 		}
 	}

@@ -191,9 +191,12 @@ VertEqUpscaler::find (
 	int bot_ndx = num_rows (col) - 1;
 	double bot_val = dpt[bot_ndx]; // target <=bot_val
 
-	// input sanity check
+	// input sanity check; if we get an out-of-range error it is usually
+	// because the reservoir has been initialized with a brine saturation
+	// which is lower than the residual saturation
 	if (! ((top_val <= target) && (target <= bot_val))) {
-		throw OPM_EXC ("Target %g out of range [%g, %g]",
+		throw OPM_EXC ("Target %g out of range [%g, %g]; "
+		               "check initial CO2 saturation",
 		               target, top_val, bot_val);
 	}
 
