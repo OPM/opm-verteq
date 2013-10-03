@@ -106,7 +106,12 @@ struct VertEqPropsImpl : public VertEqProps {
 	 *
 	 * using precalculated values for the integral.
 	 */
-	Elevation res_elev(const int col, const double max_sat) const {
+	Elevation res_elev(const int col, const double cur_sat) const {
+		// take the highest of the current saturation and the historical
+		// highest seen. note that this does NOT update the maximum, allowing
+		// this routine to be used for hypothetical saturations
+		const double max_sat = std::max (cur_sat, max_gas_sat[col]);
+
 		// right-hand side of the equation (apart from H, which is divided
 		// in the averaging operator stored)
 		const double max_vol = upscaled_poro[col] * max_sat;
