@@ -279,10 +279,12 @@ VertEqImpl::downscale (const TwophaseState &coarseScale,
 	}
 
 	// properties object handle the actual downscaling since it
-	// already has the information about the interface
+	// already has the information about the interface.
+	// update the coarse saturation *before* we downscale to 3D,
+	// since we need the residual interface for that.
+	pr->upd_res_sat (&coarseScale.saturation ()[0]);
 	pr->downscale_saturation (&coarseScale.saturation ()[0],
 	                          &fineScale.saturation ()[0]);
-	pr->upd_res_sat (&coarseScale.saturation ()[0]);
 	pr->downscale_pressure (&coarseScale.saturation ()[0],
 	                        &coarseScale.pressure ()[0],
 	                        &fineScale.pressure ()[0]);

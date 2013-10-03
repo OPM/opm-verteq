@@ -717,7 +717,9 @@ struct VertEqPropsImpl : public VertEqProps {
 
 			// make sure residual area of CO2 is up to speed; this ensures
 			// that we're looking at current data in the max_gas_elev member
-			check_res_sat (col, gas_hgt);
+			if (gas_hgt > max_gas_sat[col]) {
+				throw OPM_EXC ("Call upd_res_sat before downscale_saturation");
+			}
 
 			// height of the interface of residual and mobile CO2, resp.
 			const Elevation res_gas = max_gas_elev[col];         // zeta_R

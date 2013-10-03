@@ -103,6 +103,9 @@ struct VertEqProps : public IncompPropertiesInterface {
 	 *	most quickly.
 	 *
 	 * @note The space for the data must have been allocated by the caller.
+	 *
+	 * @note You should call upd_res_sat before calling this method to make
+	 *       sure that the position of the interface is up-to-date.
 	 */
 	virtual void downscale_saturation (const double* coarseSaturation,
 	                                   double* fineSaturation) = 0;
