@@ -86,17 +86,13 @@ struct VertEqPropsImpl : public VertEqProps {
 			const double cur_sat = snap[col * NUM_PHASES + GAS];
 
 			// has it increased? is there more of the plume in this column?
-			check_res_sat (col, cur_sat);
-		}
-	}
+			if (cur_sat > max_gas_sat[col]) {
+				// recalculate discretized elevation
+				max_gas_elev[col] = res_elev (col, cur_sat);
 
-	void check_res_sat (int col, double cur_sat) {
-		if (cur_sat > max_gas_sat[col]) {
-			// recalculate discretized elevation
-			max_gas_elev[col] = res_elev (col, cur_sat);
-
-			// update stored saturation so we test correctly next time
-			max_gas_sat[col] = cur_sat;
+				// update stored saturation so we test correctly next time
+				max_gas_sat[col] = cur_sat;
+			}
 		}
 	}
 
