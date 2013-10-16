@@ -28,7 +28,7 @@ int main (int argc, char *argv[]) try {
 
 	// parse keywords from the input file specified
 	// TODO: requirement that file exists
-	const string filename = param.get <string> ("filename");
+	const string filename = param.get <string> ("deck_filename");
 	cout << "Reading deck: " << filename << endl;
 	const EclipseGridParser parser (filename);
 

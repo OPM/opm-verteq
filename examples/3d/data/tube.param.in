@@ -1,2 +1,2 @@
-filename=@PROJECT_SOURCE_DIR@/data/tube.data
+deck_filename=@PROJECT_SOURCE_DIR@/data/tube.data
 use_reorder=false
