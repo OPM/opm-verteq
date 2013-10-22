@@ -1,0 +1,51 @@
+Source: opm-verteq
+Priority: extra
+Maintainer: Arne Morten Kvarving <arne.morten.kvarving@sintef.no>
+Build-Depends: build-essential, debhelper (>= 9), libboost-filesystem-dev,
+               libboost-system-dev, libboost-date-time-dev, libboost-test-dev,
+               libsuperlu3-dev, gfortran, libsuitesparse-dev, pkg-config,
+               libdune-common-dev, libdune-istl-dev, cmake, libtinyxml-dev, bc,
+               libert.ecl-dev, git, zlib1g-dev, libtool, doxygen, libopm-core-dev,
+               texlive-latex-extra, texlive-latex-recommended, ghostscript
+Standards-Version: 3.9.2
+Section: libs
+Homepage: http://opm-project.org
+Vcs-Git: git://github.com/OPM/opm-core.git
+Vcs-Browser: https://github.com/OPM/opm-core
+
+Package: libopm-verteq1-dev
+Section: libdevel
+Architecture: any
+Multi-Arch: foreign
+Depends: libopm-verteq1 (= ${binary:Version})
+Provides: libopm-verteq-dev
+Suggests: libopm-verteq-doc
+Description: OPM vertical equilibrium library
+ opm-verteq is an add-on to the simulators in opm-core to do vertical equilibrium upscaling.
+
+Package: libopm-verteq1
+Section: libs
+Pre-Depends: ${misc:Pre-Depends}, multiarch-support
+Architecture: any
+Multi-Arch: same
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Provides: libopm-verteq
+Description: OPM vertical equilibrium library
+ opm-verteq is an add-on to the simulators in opm-core to do vertical equilibrium upscaling.
+
+Package: libopm-verteq1-doc
+Section: doc
+Architecture: all
+Multi-Arch: foreign
+Provides: libopm-verteq-doc
+Description: OPM vertical equilibrium library -- documentation
+ opm-verteq is an add-on to the simulators in opm-core to do vertical equilibrium upscaling.
+
+Package: libopm-verteq1-dbg
+Section: debug
+Architecture: any
+Multi-Arch: foreign
+Provides: libopm-verteq-dbg
+Depends: libopm-verteq1 (= ${binary:Version}), ${misc:Depends}
+Description: OPM vertical equilibrium library -- debug symbols
+ opm-verteq is an add-on to the simulators in opm-core to do vertical equilibrium upscaling.
