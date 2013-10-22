@@ -13,7 +13,7 @@ Homepage: http://opm-project.org
 Vcs-Git: git://github.com/OPM/opm-core.git
 Vcs-Browser: https://github.com/OPM/opm-core
 
-Package: libopm-verteq1-dev
+Package: libopm-verteq0-dev
 Section: libdevel
 Architecture: any
 Multi-Arch: foreign
@@ -23,7 +23,7 @@ Suggests: libopm-verteq-doc
 Description: OPM vertical equilibrium library
  opm-verteq is an add-on to the simulators in opm-core to do vertical equilibrium upscaling.
 
-Package: libopm-verteq1
+Package: libopm-verteq0
 Section: libs
 Pre-Depends: ${misc:Pre-Depends}, multiarch-support
 Architecture: any
@@ -33,7 +33,7 @@ Provides: libopm-verteq
 Description: OPM vertical equilibrium library
  opm-verteq is an add-on to the simulators in opm-core to do vertical equilibrium upscaling.
 
-Package: libopm-verteq1-doc
+Package: libopm-verteq0-doc
 Section: doc
 Architecture: all
 Multi-Arch: foreign
@@ -41,11 +41,11 @@ Provides: libopm-verteq-doc
 Description: OPM vertical equilibrium library -- documentation
  opm-verteq is an add-on to the simulators in opm-core to do vertical equilibrium upscaling.
 
-Package: libopm-verteq1-dbg
+Package: libopm-verteq0-dbg
 Section: debug
 Architecture: any
 Multi-Arch: foreign
 Provides: libopm-verteq-dbg
-Depends: libopm-verteq1 (= ${binary:Version}), ${misc:Depends}
+Depends: libopm-verteq0 (= ${binary:Version}), ${misc:Depends}
 Description: OPM vertical equilibrium library -- debug symbols
  opm-verteq is an add-on to the simulators in opm-core to do vertical equilibrium upscaling.
