@@ -1,3 +1,4 @@
 deck_filename=@PROJECT_SOURCE_DIR@/../3d/data/tube.data
 use_reorder=false
 output_vtk=false
+output_ecl=true
