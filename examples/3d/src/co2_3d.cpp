@@ -13,6 +13,7 @@
 #include <opm/core/linalg/LinearSolverFactory.hpp>
 #include <opm/core/simulator/SimulatorIncompTwophase.hpp>
 #include <opm/core/simulator/SimulatorReport.hpp>
+#include <opm/core/simulator/SimulatorOutput.hpp>
 
 #include <iostream>
 #include <vector>
@@ -59,6 +60,10 @@ int main (int argc, char *argv[]) try {
 	LinearSolverFactory linsolver (param);
 	SimulatorIncompTwophase sim (
 		param, grid, fluid, 0, wells, src, bc.c_bcs(), linsolver, gravity);
+
+	// write the state at all reporting times
+	SimulatorOutput <SimulatorIncompTwophase> outp (
+		param, parser, grid, stepping, state, wellState, sim); (void) outp;
 
 	// if some parameters were unused, it may be that they're spelled wrong
 	if (param.anyUnused ()) {
