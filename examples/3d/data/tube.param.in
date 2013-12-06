@@ -1,2 +1,4 @@
-filename=@PROJECT_SOURCE_DIR@/data/tube.data
+deck_filename=@PROJECT_SOURCE_DIR@/data/tube.data
 use_reorder=false
+output_ecl=true
+output_dir=@PROJECT_BINARY_DIR@/bin/output

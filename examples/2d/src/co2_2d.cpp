@@ -13,6 +13,7 @@
 #include <opm/core/linalg/LinearSolverFactory.hpp>
 #include <opm/core/simulator/SimulatorIncompTwophase.hpp>
 #include <opm/core/simulator/SimulatorReport.hpp>
+#include <opm/core/simulator/SimulatorOutput.hpp>
 #include <opm/verteq/wrapper.hpp>
 
 #include <iostream>
@@ -28,7 +29,7 @@ int main (int argc, char *argv[]) try {
 
 	// parse keywords from the input file specified
 	// TODO: requirement that file exists
-	const string filename = param.get <string> ("filename");
+	const string filename = param.get <string> ("deck_filename");
 	cout << "Reading deck: " << filename << endl;
 	const EclipseGridParser parser (filename);
 
@@ -60,6 +61,10 @@ int main (int argc, char *argv[]) try {
 	LinearSolverFactory linsolver (param);
 	VertEqWrapper<SimulatorIncompTwophase> sim (
 		param, grid, fluid, 0, wells, src, bc.c_bcs(), linsolver, gravity);
+
+	// write the state at all reporting times
+	SimulatorOutput <VertEqWrapper <SimulatorIncompTwophase> > outp (
+		param, parser, grid, stepping, state, wellState, sim); (void) outp;
 
 	// if some parameters were unused, it may be that they're spelled wrong
 	if (param.anyUnused ()) {
