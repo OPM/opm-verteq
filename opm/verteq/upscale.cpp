@@ -209,7 +209,7 @@ VertEqUpscaler::find (
 		// guess at the index assuming that every block has equal height
 		const double frac = (target - top_val) / (bot_val - top_val);
 		const int cur_ndx = top_ndx + static_cast <int> (
-		                    std::floor ((bot_ndx - top_ndx + 1) * frac));
+		                    std::floor ((bot_ndx - top_ndx) * frac));
 
 		// get the brackets of this block; the weigted depth is the upper
 		// bound of the integral for each block. unfortunately we don't have
