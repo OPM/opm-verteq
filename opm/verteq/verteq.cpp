@@ -17,6 +17,7 @@
 #endif /* __clang__ */
 #include <opm/core/simulator/TwophaseState.hpp>
 #include <opm/core/utility/parameters/ParameterGroup.hpp>
+#include <opm/core/grid/GridHelpers.hpp>
 #include <opm/core/wells.h>
 #include <memory>           // unique_ptr
 
@@ -261,7 +262,16 @@ VertEqImpl::upscale (const TwophaseState& fineScale,
 	// use the regular helper method to initialize the face pressure
 	// since it is implemented in the header, we have access to it
 	// even though it is in an anonymous namespace!
-	initFacePressure (this->grid(), coarseScale);
+	{
+		const UnstructuredGrid& g = this->grid();
+
+		initFacePressure (UgGridHelpers::dimensions (g),
+		                  UgGridHelpers::numFaces (g),
+		                  UgGridHelpers::faceCells (g),
+		                  UgGridHelpers::beginFaceCentroids (g),
+		                  UgGridHelpers::beginCellCentroids (g),
+		                  coarseScale);
+	}
 
 	// update the properties from the initial state (the
 	// simulation object won't call this method before the
