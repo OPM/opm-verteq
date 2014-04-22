@@ -262,16 +262,14 @@ VertEqImpl::upscale (const TwophaseState& fineScale,
 	// use the regular helper method to initialize the face pressure
 	// since it is implemented in the header, we have access to it
 	// even though it is in an anonymous namespace!
-	{
-		const UnstructuredGrid& g = this->grid();
+	const UnstructuredGrid& g = this->grid();
 
-		initFacePressure (UgGridHelpers::dimensions (g),
-		                  UgGridHelpers::numFaces (g),
-		                  UgGridHelpers::faceCells (g),
-		                  UgGridHelpers::beginFaceCentroids (g),
-		                  UgGridHelpers::beginCellCentroids (g),
-		                  coarseScale);
-	}
+	initFacePressure (UgGridHelpers::dimensions (g),
+	                  UgGridHelpers::numFaces (g),
+	                  UgGridHelpers::faceCells (g),
+	                  UgGridHelpers::beginFaceCentroids (g),
+	                  UgGridHelpers::beginCellCentroids (g),
+	                  coarseScale);
 
 	// update the properties from the initial state (the
 	// simulation object won't call this method before the
