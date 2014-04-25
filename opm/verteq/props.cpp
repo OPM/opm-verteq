@@ -437,9 +437,11 @@ struct VertEqPropsImpl : public VertEqProps {
 			const double Krw = 1 - (up.eval (col, prm_res_int, res_lvl)
 			                       +up.eval (col, prm_wat_int, intf));
 
-			// assign to output
-			kr[i * NUM_PHASES + GAS] = Krg;
-			kr[i * NUM_PHASES + WAT] = Krw;
+			// assign to output: we may get small rounding errors in summation,
+			// but we don't want to let those escape here because they will
+			// trigger asserts in the 2D simulator
+			kr[i * NUM_PHASES + GAS] = snapToRange (Krg, 0., 1.);
+			kr[i * NUM_PHASES + WAT] = snapToRange (Krw, 0., 1.);
 
 			// was derivatives requested?
 			if (dkrds) {

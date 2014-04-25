@@ -167,11 +167,26 @@ VertEqUpscaler::eval (
 	return before + (dpt_col[row] - before) * zeta.fraction ();
 }
 
+double Opm::snapToRange (const double value,
+                         const double lo,
+                         const double hi) {
+	const double TOL = 1e-10;
+	if (value < lo) {
+		return lo - TOL < value ? lo : value;
+	}
+	else if (hi < value) {
+		return value < hi + TOL ? hi : value;
+	}
+	else {
+		return value;
+	}
+}
+
 Elevation
 VertEqUpscaler::find (
 		int col,
 		const double* dpt,
-		const double target) const {
+		const double tgt) const {
 
 	// use interpolation search to find the proper block for this
 	// (relative) depth. under the assumption that all individual
@@ -190,6 +205,10 @@ VertEqUpscaler::find (
 	// *end* of the block, like what is in up_bnd
 	int bot_ndx = num_rows (col) - 1;
 	double bot_val = dpt[bot_ndx]; // target <=bot_val
+
+	// the summation in the averaging operator can give a small round-off
+	// error which doesn't influence the search, but traps below
+	const double target = snapToRange (tgt, top_val, bot_val);
 
 	// input sanity check; if we get an out-of-range error it is usually
 	// because the reservoir has been initialized with a brine saturation

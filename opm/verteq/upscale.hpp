@@ -224,6 +224,20 @@ protected:
 	const TopSurf& ts;
 };
 
+/**
+ * If a value is just outside the interval, such that it can be caused
+ * by round-off errors in the averaging, put it within so that the
+ * bounds-checks doesn't fail.
+ *
+ * @param value Value that should be between [lo-eps, hi+eps]
+ * @param lo    Lower bound of the interval
+ * @param hi    Upper bound of the interval
+ * @return      Value in the range [lo, hi]
+ */
+double snapToRange (const double value,
+                    const double lo,
+                    const double hi);
+
 } // namespace Opm
 
 #endif // OPM_VERTEQ_UPSCALE_HPP_INCLUDED
