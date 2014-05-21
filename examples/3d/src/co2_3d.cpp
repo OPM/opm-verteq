@@ -1,7 +1,6 @@
 /* -*- mode: c++; tab-width: 2; indent-tabs-mode: t; truncate-lines: t -*- */
 /* vim: set filetype=cpp autoindent tabstop=2 shiftwidth=2 noexpandtab softtabstop=2 nowrap: */
 #include <opm/core/utility/parameters/ParameterGroup.hpp>
-#include <opm/core/io/eclipse/EclipseGridParser.hpp>
 #include <opm/core/grid/GridManager.hpp>
 #include <opm/core/props/IncompPropertiesFromDeck.hpp>
 #include <opm/core/simulator/initState.hpp>
@@ -14,8 +13,11 @@
 #include <opm/core/simulator/SimulatorIncompTwophase.hpp>
 #include <opm/core/simulator/SimulatorReport.hpp>
 #include <opm/core/simulator/SimulatorOutput.hpp>
+#include <opm/parser/eclipse/Parser/Parser.hpp>
+#include <opm/parser/eclipse/EclipseState/EclipseState.hpp>
 
 #include <iostream>
+#include <memory>
 #include <vector>
 
 using namespace Opm;
@@ -30,7 +32,8 @@ int main (int argc, char *argv[]) try {
 	// TODO: requirement that file exists
 	const string filename = param.get <string> ("deck_filename");
 	cout << "Reading deck: " << filename << endl;
-	const EclipseGridParser parser (filename);
+	const Parser parserGenerator;
+	auto parser = parserGenerator.parseFile (filename);
 
 	// extract grid from the parse tree
 	const GridManager gridMan (parser);
@@ -45,7 +48,9 @@ int main (int argc, char *argv[]) try {
 	initStateFromDeck (grid, fluid, parser, gravity [2], state);
 
 	// setup wells from input, using grid and rock properties read earlier
-	WellsManager wells (parser, grid, fluid.permeability());
+	auto eclipseState = make_shared <EclipseState> (parser);
+	int reportStepIdx = 0;
+	WellsManager wells (eclipseState, reportStepIdx, grid, fluid.permeability());
 	WellState wellState; wellState.init (wells.c_wells(), state);
 
 	// no sources and no-flow boundary conditions
@@ -54,7 +59,8 @@ int main (int argc, char *argv[]) try {
 
 	// run schedule
 	SimulatorTimer stepping;
-	stepping.init (parser);
+	auto timeMap = make_shared <TimeMap> (parser);
+	stepping.init (timeMap);
 
 	// pressure and transport solvers
 	LinearSolverFactory linsolver (param);
@@ -63,7 +69,7 @@ int main (int argc, char *argv[]) try {
 
 	// write the state at all reporting times
 	SimulatorOutput <SimulatorIncompTwophase> outp (
-		param, parser, grid, stepping, state, wellState, sim); (void) outp;
+		param, *parser, *timeMap, grid, stepping, state, wellState, sim); (void) outp;
 
 	// if some parameters were unused, it may be that they're spelled wrong
 	if (param.anyUnused ()) {
