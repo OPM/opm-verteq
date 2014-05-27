@@ -7,6 +7,9 @@ DIMENS
 	3	1	2
 /
 
+TABDIMS
+/
+
 -- OPM currently has a bias against injecting anything else than first phase
 -- supercrit. co2 as the first phase (WATER), brine as second phase (OIL)
 WATER
