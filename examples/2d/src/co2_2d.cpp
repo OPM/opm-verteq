@@ -33,23 +33,23 @@ int main (int argc, char *argv[]) try {
 	// TODO: requirement that file exists
 	const string filename = param.get <string> ("deck_filename");
 	cout << "Reading deck: " << filename << endl;
-	const Parser parserGenerator;
-	auto parser = parserGenerator.parseFile (filename);
+	const Parser deckGenerator;
+	auto deck = deckGenerator.parseFile (filename);
 
 	// extract grid from the parse tree
-	const GridManager gridMan (parser);
+	const GridManager gridMan (deck);
 	const UnstructuredGrid& grid = *gridMan.c_grid ();
 
 	// extract fluid, rock and two-phase properties from the parse tree
-	IncompPropertiesFromDeck fluid (parser, grid);
+	IncompPropertiesFromDeck fluid (deck, grid);
 
 	// initial state of the reservoir
 	const double gravity [] = { 0., 0., Opm::unit::gravity };
 	TwophaseState state;
-	initStateFromDeck (grid, fluid, parser, gravity [2], state);
+	initStateFromDeck (grid, fluid, deck, gravity [2], state);
 
 	// setup wells from input, using grid and rock properties read earlier
-	auto eclipseState = make_shared <EclipseState> (parser);
+	auto eclipseState = make_shared <EclipseState> (deck);
 	int reportStepIdx = 0;
 	WellsManager wells (eclipseState, reportStepIdx, grid, fluid.permeability());
 	WellState wellState; wellState.init (wells.c_wells(), state);
@@ -60,7 +60,7 @@ int main (int argc, char *argv[]) try {
 
 	// run schedule
 	SimulatorTimer stepping;
-	auto timeMap = make_shared <TimeMap> (parser);
+	auto timeMap = make_shared <TimeMap> (deck);
 	stepping.init (timeMap);
 
 	// pressure and transport solvers
@@ -70,7 +70,7 @@ int main (int argc, char *argv[]) try {
 
 	// write the state at all reporting times
 	SimulatorOutput <VertEqWrapper <SimulatorIncompTwophase> > outp (
-		param, *parser, *timeMap, grid, stepping, state, wellState, sim); (void) outp;
+		param, *deck, *timeMap, grid, stepping, state, wellState, sim); (void) outp;
 
 	// if some parameters were unused, it may be that they're spelled wrong
 	if (param.anyUnused ()) {
