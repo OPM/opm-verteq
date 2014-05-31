@@ -7,6 +7,9 @@ DIMENS
 	3	1	2
 /
 
+TABDIMS
+/
+
 -- OPM currently has a bias against injecting anything else than first phase
 -- supercrit. co2 as the first phase (WATER), brine as second phase (OIL)
 WATER
@@ -93,13 +96,13 @@ COMPDAT
 
 -- inject CO2 with a constant rate of 5000 cubic meters per day
 WCONINJE
-	inj		WATER 	OPEN	RESV	-1		5000	/
+	inj		WATER 	OPEN	RESV	*		5000	/
 /
 
 -- brine with density 990 kg/m^3 in a 1000m column gives hydrostatic
 -- pressure of approx. 97 bar; BHP should be at least this to produce
 WCONPROD
-	prod	OPEN	BHP 	-1		-1		-1		-1		-1		97	/
+	prod	OPEN	BHP 	*		*		*		*		*		97	/
 /
 
 -- report daily
