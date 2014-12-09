@@ -70,7 +70,7 @@ endmacro (tests_hook)
 include (OpmLibMain)
 
 add_custom_target(check-commits
-									COMMAND ${CMAKE_COMMAND}
-													-DPROJECT_SOURCE_DIR=${PROJECT_SOURCE_DIR}
-													-DCMAKE_BINARY_DIR=${CMAKE_BINARY_DIR}
-													-P ${PROJECT_SOURCE_DIR}/cmake/Scripts/CheckCommits.cmake)
+	COMMAND ${CMAKE_COMMAND}
+		-DPROJECT_SOURCE_DIR=${PROJECT_SOURCE_DIR}
+		-DCMAKE_BINARY_DIR=${CMAKE_BINARY_DIR}
+		-P ${PROJECT_SOURCE_DIR}/cmake/Scripts/CheckCommits.cmake)
