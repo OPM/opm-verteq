@@ -1,0 +1,8 @@
+# target
+*.pdf
+
+# latexmk output
+*.aux
+*.fdb_latexmk
+*.log
+*.synctex.gz
