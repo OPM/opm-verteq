@@ -437,9 +437,11 @@ struct VertEqPropsImpl : public VertEqProps {
 			const double Krw = 1 - (up.eval (col, prm_res_int, res_lvl)
 			                       +up.eval (col, prm_wat_int, intf));
 
-			// assign to output
-			kr[i * NUM_PHASES + GAS] = Krg;
-			kr[i * NUM_PHASES + WAT] = Krw;
+			// assign to output: we may get small rounding errors in summation,
+			// but we don't want to let those escape here because they will
+			// trigger asserts in the 2D simulator
+			kr[i * NUM_PHASES + GAS] = snapToRange (Krg, 0., 1.);
+			kr[i * NUM_PHASES + WAT] = snapToRange (Krw, 0., 1.);
 
 			// was derivatives requested?
 			if (dkrds) {
@@ -574,19 +576,42 @@ struct VertEqPropsImpl : public VertEqProps {
 	}
 
 	virtual void satRange (const int n,
-	                       const int *cells,
-	                       double *smin,
-	                       double *smax) const {
-		// saturation is just another name for "how much of the column
-		// is filled", so every range from nothing to completely filled
-		// are valid. even though there is residual water/gas in each
-		// block, this is not seen from the 2D code
-		const int np = n * numPhases ();
-		fill (smin, smin + np, 0.);
-		fill (smax, smax + np, 1.);
+	                         const int *cells,
+	                         double *smin,
+	                         double *smax) const {
+		for (int i = 0; i < n; ++i) {
+			const int col = cells[i];
+			// if no gas is filled in the column, then the height of the
+			// plume is zero. we assume that there isn't residual CO2 present
+			// in the reservoir before we start injecting
+			const double min_gas = 0.;
 
-		// this is just to avoid warnings about unused variable
-		static_cast <void> (cells);
+			// upscaled saturation is an expression for depth, but we must
+			// also take into account the residual brine. (picture that all
+			// of the residual brine could be stacked at the bottom). thus,
+			// we must calculate it from the expression:
+			//
+			// H \Phi S_g,upper = \int_{\zeta_B}^{\zeta_T} \phi (1-s_{w,r}) dz
+			//
+			// i.e. what would S_g be when the entire column is filled with
+			// CO2 from bottom (\zeta_B) to top (\zeta_T), making room for
+			// the residual water in each cell on the way up.
+			// The total height is part of the integral stored in res_wat_dpt
+			// (which is the maximum fill volume of CO2), but we must divide
+			// by the upscaled porosity itself to get a saturation.
+			const double max_gas =
+							up.eval (col, res_wat_dpt, up.bottom (col)) /
+							upscaled_poro[col];
+
+			// assign to output; make sure that maximum amount of gas and
+			// residual amount of brine cannot exceed 1, and vice versa (i.e.
+			// the two heights stacked on top cannot be larger than the
+			// entire column!)
+			smin[i * NUM_PHASES + GAS] = min_gas;
+			smin[i * NUM_PHASES + WAT] = 1 - max_gas;
+			smax[i * NUM_PHASES + GAS] = max_gas;
+			smax[i * NUM_PHASES + WAT] = 1 - min_gas;
+		}
 	}
 
 	virtual void upscale_pressure (const double* coarseSaturation,
