@@ -26,4 +26,7 @@ override_dh_auto_install:
 	dh_auto_install -- install-html
 
 override_dh_installdocs:
-	dh_installdocs --link-doc=libopm-verteq1
+	dh_installdocs --link-doc=libopm-verteq0
+
+override_dh_strip:
+	dh_strip -plibopm-verteq0 --dbg-package=libopm-verteq0-dbg
