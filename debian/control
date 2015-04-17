@@ -6,7 +6,8 @@ Build-Depends: build-essential, debhelper (>= 9), libboost-filesystem-dev,
                libsuperlu3-dev, gfortran, libsuitesparse-dev, pkg-config,
                libdune-common-dev, libdune-istl-dev, cmake, libtinyxml-dev, bc,
                libert.ecl-dev, git, zlib1g-dev, libtool, doxygen, libopm-core-dev,
-               texlive-latex-extra, texlive-latex-recommended, ghostscript
+               texlive-latex-extra, texlive-latex-recommended, ghostscript,
+               libboost-iostreams-dev, libopm-parser-dev
 Standards-Version: 3.9.2
 Section: libs
 Homepage: http://opm-project.org
@@ -17,7 +18,7 @@ Package: libopm-verteq0-dev
 Section: libdevel
 Architecture: any
 Multi-Arch: foreign
-Depends: libopm-verteq1 (= ${binary:Version})
+Depends: libopm-verteq0 (= ${binary:Version})
 Provides: libopm-verteq-dev
 Suggests: libopm-verteq-doc
 Description: OPM vertical equilibrium library
