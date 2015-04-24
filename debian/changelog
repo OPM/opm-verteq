@@ -1,3 +1,9 @@
+opm-verteq (2015.04-1~precise) precise; urgency=medium
+
+  * Release new version
+
+ -- Arne Morten Kvarving <arne.morten.kvarving@sintef.no>  Fri, 24 Apr 2015 15:15:40 +0200
+
 opm-verteq (2013.10-3~precise) precise; urgency=low
 
   * Change library series to 0
