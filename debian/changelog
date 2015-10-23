@@ -1,5 +1,5 @@
-opm-verteq (2013.10-3~precise) precise; urgency=low
+opm-verteq (2015.10-rc1-1~trusty) trusty; urgency=medium
 
-  * Change library series to 0
+  * New version
 
- -- Arne Morten Kvarving <arne.morten.kvarving@sintef.no>  Tue, 22 Oct 2013 13:58:19 +0200
+ -- Arne Morten Kvarving <arne.morten.kvarving@sintef.no>  Fri, 23 Oct 2015 13:34:18 +0200

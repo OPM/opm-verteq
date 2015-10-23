@@ -2,10 +2,10 @@
 # spec file for package opm-verteq
 #
 
-%define tag rc2
+%define tag rc1
 
 Name:           opm-verteq
-Version:        2013.10
+Version:        2015.10
 Release:        0
 Summary:        Open Porous Media - vertical equilibrium library
 License:        GPL-3.0
