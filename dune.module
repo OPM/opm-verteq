@@ -1,6 +1,13 @@
+####################################################################
+# Dune module information file: This file gets parsed by dunecontrol
+# and by the CMake build scripts.
+####################################################################
+
 Module: opm-verteq
 Description: OPM Vertical Equilibrium library
-Version: 0.9-pre
-Label: 2014.03
+Version: 2016.04-pre
+Label: 2016.04-pre
 Maintainer: roland.kaufmann@uni.no
-Depends: opm-core (>= 1.1)
+MaintainerName: Roland Kaufmann
+Url: http://opm-project.org
+Depends: opm-core
