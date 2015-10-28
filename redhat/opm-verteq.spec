@@ -2,7 +2,7 @@
 # spec file for package opm-verteq
 #
 
-%define tag rc1
+%define tag rc2
 
 Name:           opm-verteq
 Version:        2015.10
