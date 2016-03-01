@@ -245,7 +245,7 @@ void
 VertEqImpl::upscale (const TwophaseState& fineScale,
                      TwophaseState& coarseScale) {
 	// dimension state object to the top grid
-	coarseScale.init (*ts, pr->numPhases ());
+	coarseScale.init (ts->number_of_cells, ts->number_of_faces, pr->numPhases ());
 
 	// upscale pressure and saturation to find the initial state of
 	// the two-dimensional domain. we only need to set the pressure
