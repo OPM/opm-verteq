@@ -12,7 +12,7 @@
 #include <opm/core/linalg/LinearSolverFactory.hpp>
 #include <opm/core/simulator/SimulatorIncompTwophase.hpp>
 #include <opm/core/simulator/SimulatorReport.hpp>
-#include <opm/core/simulator/SimulatorOutput.hpp>
+#include <opm/verteq/SimulatorOutput.hpp>
 #include <opm/parser/eclipse/Parser/Parser.hpp>
 #include <opm/parser/eclipse/EclipseState/EclipseState.hpp>
 
